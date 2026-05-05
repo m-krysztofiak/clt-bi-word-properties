@@ -1,0 +1,746 @@
+---
+title: "BLC CLT and Word Properties"
+date: "2026-04-01"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+```{r libraries, include=FALSE}
+library(tidyverse)
+library(lme4)
+library(broom.mixed) #for RMarkdown tables
+library(knitr) #for RMarkdown tables
+library(afex)
+```
+
+```{r data, include=FALSE}
+data_pl <- read_csv("data_clt_wp_pl_anon.csv")
+data_no <- read_csv("data_clt_wp_no_anon.csv")
+```
+
+## Data prepation
+
+Step 1. Removing outliers from RTs
+Outliers are defined as RTs that are both higher 
+than mean RT + 3SD of a given child in a given task 
+AND mean RT + 3SD of a given task
+
+Database filtered for complete datapoints (frequency), 
+correct responses and measured RTs higher than 1000 ms 
+(lower are typically measurement errors)
+
+Step 2. Scaling
+
+```{r outliers-rts-pl, include=FALSE}
+data_pl_filtered <- data_pl %>%
+  filter(!is.na(reaction_time)) %>%
+  filter(accuracy_strict == 1) %>%
+  filter(reaction_time>=1000) %>%
+  filter(complete.cases(FrequencyLemmaLog, Imageability, AoA))
+length(data_pl_filtered$reaction_time) 
+#there are 11236 measured reaction times for correct responses and complete cases, RTs>=1000 ms
+#we removed <1% RTs (110/11478)
+
+mean_RT_PL <- data_pl_filtered %>%
+  group_by(child_id, task) %>%
+  summarise(mean_score = mean(reaction_time), 
+            sd_score = sd(reaction_time), 
+            .groups = "drop")
+
+wide_df_RT_PL <- mean_RT_PL %>%
+  pivot_wider(names_from = task, 
+              values_from = c(mean_score, sd_score), 
+              names_sep = "_")
+
+data_pl_with_outliers <- data_pl_filtered %>%
+  left_join(mean_RT_PL, by = c("child_id", "task")) %>%
+  mutate(outlier_per_child = (reaction_time - mean_score) > 3 * sd_score)
+
+#and now calculate the means for each task to find outliers
+data_pl_meanRTs <- data_pl_with_outliers %>%
+  group_by(task) %>%
+  summarise(mean_absolut = mean(reaction_time),
+            sd_absolut = sd(reaction_time), 
+            .groups = "drop")
+
+data_pl_with_outliers <- data_pl_with_outliers %>%
+  left_join(data_pl_meanRTs , by = "task") %>%
+  mutate(outlier_overall = (reaction_time - mean_absolut) > 3 * sd_absolut)
+
+outliers_only_PL <- data_pl_with_outliers %>%
+  filter(outlier_per_child == TRUE & outlier_overall == TRUE)
+
+summary(outliers_only_PL)
+
+#Now we exclude outliers from the database based on the two criteria (>M+3SD for child and for task)
+#We also scale the frequency, imageability and AoA
+#This database will be used for the analyses of the reaction times
+data_pl_out_outliers <- data_pl_with_outliers %>%
+  filter(!(outlier_per_child == TRUE & outlier_overall == TRUE))
+data_pl_out_outliers$group <-relevel(factor(data_pl_out_outliers$group), ref="monoPL")
+```
+
+```{r scale-pl, include=FALSE}
+#data without RT outliers for RT analyses
+#frequency is on a log scale but frquency cds needs to be transformed
+data_pl_out_outliers <- data_pl_out_outliers %>%
+  mutate(
+    frequency_cds_scaled = scale(log(frequency_cds),
+                                     center = T, scale = T),
+    frequency_scaled = scale(FrequencyLemmaLog, 
+                             center = T, scale = T),
+    imageability_scaled = scale(Imageability, 
+                                center = T, scale = T),
+    AoA_scaled = scale(AoA, 
+                       center = T, scale = T),
+    logRT=log(reaction_time))
+
+data_pl_out_outliers$group <-relevel(factor(data_pl_out_outliers$group), ref="monoPL")
+
+#data with RT outliers for accuracy analyses
+data_pl <- data_pl %>%
+  mutate(frequency_cds_log = log(frequency_cds)) %>% #CDS to log
+  mutate(
+     frequency_cds_scaled = scale(frequency_cds_log, 
+                                      center = T, scale = T),
+     frequency_scaled = scale(FrequencyLemmaLog, 
+                              center = T, scale = T),
+    imageability_scaled = scale(Imageability, 
+                                center = TRUE, scale = TRUE),
+    AoA_scaled = scale(AoA, 
+                       center = TRUE, scale = TRUE))
+
+summary(data_pl)
+data_pl$group <-relevel(factor(data_pl$group), ref="monoPL")
+```
+
+```{r outliers-rts-no, include=FALSE}
+data_no_filtered <- data_no %>%
+  filter(!is.na(reaction_time)) %>%
+  filter(accuracy_strict == 1) %>%
+  filter(reaction_time>=1000) %>%
+  filter(complete.cases(Frequency, Imageability, AoA))
+length(data_no_filtered$reaction_time)  
+#there are 9951 measured reaction times for correct responses and complete cases, RTs>=1000 ms
+#we removed 1.4% RTs (142/10093)
+  
+mean_RT_NOR <- data_no_filtered %>%
+  group_by(child_id, task) %>%
+  summarise(mean_score = mean(reaction_time), 
+            sd_score = sd(reaction_time), 
+            .groups = "drop")
+
+wide_df_RT_NOR <- mean_RT_NOR %>%
+  pivot_wider(names_from = task, 
+              values_from = c(mean_score, sd_score), 
+              names_sep = "_")
+
+data_no_with_outliers <- data_no_filtered %>%
+  left_join(mean_RT_NOR, by = c("child_id", "task")) %>%
+  mutate(outlier_per_child = 
+           (reaction_time - mean_score) > 3 * sd_score)
+
+#and now calculate the means for each task to find outliers
+data_no_meanRTs <- data_no_with_outliers %>%
+  group_by(task) %>%
+  summarise(mean_absolut = mean(reaction_time),
+            sd_absolut = sd(reaction_time), .groups = "drop")
+
+data_no_with_outliers <- data_no_with_outliers %>%
+  left_join(data_no_meanRTs , by = "task") %>%
+  mutate(outlier_overall = 
+           (reaction_time - mean_absolut) > 3 * sd_absolut)
+
+outliers_only_no <- data_no_with_outliers %>%
+  filter(outlier_per_child == TRUE & outlier_overall == TRUE)
+
+summary(outliers_only_no)
+
+#Now we exclude outliers from the database based on the two criteria (>M+3SD for child and for task)
+data_no_out_outliers <- data_no_with_outliers %>%
+  filter(!(outlier_per_child == TRUE & outlier_overall == TRUE))
+```
+
+NO CDS frequency is scaled on the formula:
+ln(x+1) (bc there are same frequencies = 0)
+
+```{r scale-no, include=FALSE}
+data_no_out_outliers <- data_no_out_outliers %>%
+  mutate(
+    frequency_cds_scaled = scale(log(frequency_cds+1),
+                                 center = TRUE, scale = TRUE),
+    frequency_scaled = scale(log(Frequency), 
+                             center = TRUE, scale = TRUE),
+    imageability_scaled = scale(Imageability, 
+                                center = TRUE, scale = TRUE),
+    AoA_scaled = scale(AoA, 
+                       center = TRUE, scale = TRUE),
+    logRT=log(reaction_time))
+
+data_no_out_outliers$group <-relevel(factor(data_no_out_outliers$group), ref="monoNO")
+
+#and for accuracy analyses we only need scaling the variables, no outliers
+data_no <- data_no %>%
+  mutate(
+    frequency_cds_scaled = scale(log(frequency_cds+1),
+                                 center = TRUE, scale = TRUE),
+    frequency_scaled = scale(log(Frequency + 1), 
+                             center = TRUE, scale = TRUE),
+    imageability_scaled = scale(Imageability, center = TRUE, 
+                                scale = TRUE),
+    AoA_scaled = scale(AoA, 
+                       center = TRUE, scale = TRUE))
+
+data_no$group <-relevel(factor(data_no$group), ref="monoNO")
+```
+
+## Correlations between word properties
+
+```{r include = FALSE}
+df_num <- data_pl %>%
+  distinct(word, frequency_cds_scaled, frequency_scaled, Imageability, AoA) %>%
+  select(-word)
+
+cor_mat_spearman <- cor(df_num,
+                        method = "spearman",
+                        use = "complete.obs")
+
+library(Hmisc)
+cor_res <- rcorr(as.matrix(df_num), type = "spearman")
+# correlation matrix
+cor_res$r
+# p-values
+cor_res$P
+```
+
+```{r echo = FALSE}
+library(corrplot)
+corrplot(cor_res$r,
+         p.mat = cor_res$P,
+         sig.level = 0.05,
+         method = "circle",
+         type = "upper",
+         tl.col = "black",
+         diag = FALSE,
+         insig = "blank")
+```
+
+Lack of correlation between frequency is suprising...
+
+```{r echo =FALSE}
+df_num %>% 
+  ggplot(aes(x = frequency_scaled, y = frequency_cds_scaled)) +
+  geom_point(color = "lightpink", alpha = .8) +
+  theme_classic() +
+  labs(x = "SUBTLEX",
+       y = "CDS")
+```
+
+##  Mixed Models
+
+### Polish
+
+#### Comprehension Accuracy
+
+First, with SUBTLEX frequency...
+(I'm showing only simple models)
+
+```{r pl-comp-acc-1, include=FALSE}
+model_acc_C_PL_simple = 
+  glmer(accuracy_strict ~ 
+          group*AoA_scaled + 
+          group*imageability_scaled + 
+          group*frequency_scaled + 
+          group*imageability_scaled*frequency_scaled + 
+          (1 | child_id) + (1 | word),
+        data = data_pl %>% filter(task == "C"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_C_PL_simple)
+```
+
+```{r echo = FALSE}
+table1 <- tidy(model_acc_C_PL_simple, effects = "fixed")
+kable(table1, digits = 3)
+```
+
+...Second, with CDS frequency
+
+```{r pl-comp-acc-2, include=FALSE}
+model_acc_C_PL_simple_cds = 
+  glmer(accuracy_strict ~ 
+          group*AoA_scaled + 
+          group*imageability_scaled + 
+          group*frequency_cds_scaled + 
+          group*imageability_scaled*frequency_cds_scaled + 
+          (1 | child_id) + (1 | word),
+        data = data_pl %>% filter(task == "C"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_C_PL_simple_cds)
+```
+
+```{r echo = FALSE}
+table2 <- tidy(model_acc_C_PL_simple_cds, effects = "fixed")
+kable(table2, digits = 3)
+```
+
+Compare model with SUBTLEX and CDS
+From ChatGPT (but I would verify this) 
+Interpretation:
+Lower AIC/BIC = better model
+ΔAIC:
+< 2 = essentially equivalent
+4–7 = moderate evidence
+10 = strong evidence
+
+In case of comprehension AIC and BIC are smaller (indicating better fit)
+CDS is also a *non-significant* predictor of accuracy in production.
+
+```{r echo=FALSE}
+AIC(model_acc_C_PL_simple, model_acc_C_PL_simple_cds)
+BIC(model_acc_C_PL_simple, model_acc_C_PL_simple_cds)
+```
+
+#### Production Accuracy
+
+First, with SUBTLEX frequency...
+(I'm showing only simple models)
+
+```{r pl-prod-acc-1, include=FALSE}
+model_acc_P_PL_simple = 
+  glmer(accuracy_strict ~ 
+          group*AoA_scaled + 
+          group*imageability_scaled + 
+          group*frequency_scaled + 
+          group*imageability_scaled*frequency_scaled + 
+          (1 | child_id) + (1 | word),
+        data = data_pl %>% filter(task == "P"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_P_PL_simple)
+```
+
+```{r echo = FALSE}
+table3 <- tidy(model_acc_P_PL_simple, effects = "fixed")
+kable(table3, digits = 3)
+```
+
+...Second, with CDS frequency
+
+```{r pl-prod-acc-2, include = FALSE}
+model_acc_P_PL_simple_cds = 
+  glmer(accuracy_strict ~ 
+          group*AoA_scaled + 
+          group*imageability_scaled + 
+          group*frequency_cds_scaled + 
+          group*imageability_scaled*frequency_cds_scaled + 
+          (1 | child_id) + (1 | word),
+        data = data_pl %>% filter(task == "P"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_P_PL_simple_cds)
+```
+
+```{r echo = FALSE}
+table4 <- tidy(model_acc_P_PL_simple_cds, effects = "fixed")
+kable(table4, digits = 3)
+```
+
+In case of production AIC and BIC are larger (indicating worse fit)
+CDS is also a *non-significant* predictor of accuracy in production.
+
+```{r echo=FALSE}
+AIC(model_acc_P_PL_simple, model_acc_P_PL_simple_cds)
+BIC(model_acc_P_PL_simple, model_acc_P_PL_simple_cds)
+```
+
+#### RTs Comprehension
+
+First, with SUBTLEX frequency...
+(I'm showing only simple models)
+
+```{r pl-comp-rt-1, include=FALSE}
+model_rt_C_PL_simple = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_scaled +
+                              group * imageability_scaled*frequency_scaled + 
+                              (1 | child_id) + (1 | word),
+                          data = data_pl_out_outliers %>% filter(task == "C"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_C_PL_simple)
+```
+
+```{r echo = FALSE}
+table5 <- tidy(model_rt_C_PL_simple, effects = "fixed")
+kable(table5, digits = 3)
+```
+
+...Second, with CDS frequency
+
+```{r pl-comp-rt-2, include = FALSE}
+model_rt_C_PL_simple_cds = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_cds_scaled +
+                              group * imageability_scaled*frequency_cds_scaled + 
+                              (1 | child_id) + (1 | word),
+                          data = data_pl_out_outliers %>% filter(task == "C"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_C_PL_simple_cds)
+```
+
+```{r echo = FALSE}
+table6 <- tidy(model_rt_C_PL_simple_cds, effects = "fixed")
+kable(table6, digits = 3)
+```
+
+In case of comprehension RTs AIC and BIC are smaller (indicating better fit)
+CDS is also *significant* predictor of accuracy in production.
+
+```{r echo=FALSE}
+AIC(model_rt_C_PL_simple, model_rt_C_PL_simple_cds)
+BIC(model_rt_C_PL_simple, model_rt_C_PL_simple_cds)
+```
+
+#### RTs Production
+
+First, with SUBTLEX frequency...
+(I'm showing only simple models)
+
+```{r pl-prod-rt-1, include=FALSE}
+model_rt_P_PL_simple = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_scaled +
+                              group * imageability_scaled*frequency_scaled + 
+                              (1 | child_id) + (1 | word),
+                          data = data_pl_out_outliers %>% filter(task == "P"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_P_PL_simple)
+```
+
+```{r echo = FALSE}
+table7 <- tidy(model_rt_P_PL_simple, effects = "fixed")
+kable(table7, digits = 3)
+```
+
+...Second, with CDS frequency
+
+```{r pl-prod-rt-2, include=FALSE}
+model_rt_P_PL_simple_cds = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_cds_scaled +
+                              group * imageability_scaled*frequency_cds_scaled + 
+                              (1 | child_id) + (1 | word),
+                          data = data_pl_out_outliers %>% filter(task == "P"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_P_PL_simple_cds)
+```
+
+```{r echo = FALSE}
+table6 <- tidy(model_rt_P_PL_simple_cds, effects = "fixed")
+kable(table6, digits = 3)
+```
+
+In case of production RTs AIC and BIC are similar.
+CDS is a *non-significant* predictor of accuracy in production.
+
+```{r echo = FALSE}
+AIC(model_rt_P_PL_simple, model_rt_P_PL_simple_cds)
+BIC(model_rt_P_PL_simple, model_rt_P_PL_simple_cds)
+```
+
+### Norwegian
+
+#### Comprehension Accuracy
+
+First, with SUBTLEX frequency...
+(I'm showing only simple models)
+
+```{r no-comp-acc-1, include = FALSE}
+model_acc_C_NO_simple = 
+  glmer(accuracy_strict ~ 
+          group*AoA_scaled + 
+          group*imageability_scaled + 
+          group*frequency_scaled + 
+          group*imageability_scaled*frequency_scaled + 
+          (1 | child_id) + (1 | word),
+        data = data_no %>% filter(task == "C"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_C_NO_simple)
+```
+
+```{r echo = FALSE}
+table7 <- tidy(model_acc_C_NO_simple, effects = "fixed")
+kable(table7, digits = 3)
+```
+
+...Second, with CDS frequency
+
+```{r no-comp-acc-2, include = FALSE}
+model_acc_C_NO_simple_cds = 
+  glmer(accuracy_strict ~ 
+          group*AoA_scaled + 
+          group*imageability_scaled + 
+          group*frequency_cds_scaled + 
+          group*imageability_scaled*frequency_cds_scaled + 
+          (1 | child_id) + (1 | word),
+        data = data_no %>% filter(task == "C"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_C_NO_simple_cds)
+```
+
+```{r echo = FALSE}
+table8 <- tidy(model_acc_C_NO_simple_cds, effects = "fixed")
+kable(table8, digits = 3)
+```
+
+Compare model with SUBTLEX and CDS
+From ChatGPT (but I would verify this) 
+Interpretation:
+Lower AIC/BIC = better model
+ΔAIC:
+< 2 = essentially equivalent
+4–7 = moderate evidence
+10 = strong evidence
+
+In case of comprehension AIC and BIC are smaller (indicating better fit)
+CDS is a *non-significant* predictor of accuracy in production.
+
+```{r echo=FALSE}
+AIC(model_acc_C_NO_simple, model_acc_C_NO_simple_cds)
+BIC(model_acc_C_NO_simple, model_acc_C_NO_simple_cds)
+```
+
+#### Production Accuracy
+
+First, with SUBTLEX frequency...
+(I'm showing only simple models)
+
+```{r no-prod-acc-1, include = FALSE}
+model_acc_P_NO_simple = 
+  glmer(accuracy_strict ~ 
+          group*AoA_scaled + 
+          group*imageability_scaled + 
+          group*frequency_scaled + 
+          group*imageability_scaled*frequency_scaled + 
+          (1 | child_id) + (1 | word),
+        data = data_no %>% filter(task == "P"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_P_NO_simple)
+```
+
+```{r echo = FALSE}
+table9 <- tidy(model_acc_P_NO_simple, effects = "fixed")
+kable(table9, digits = 3)
+```
+
+...Second, with CDS frequency
+
+```{r no-prod-acc-2, include = FALSE}
+model_acc_P_NO_simple_cds = 
+  glmer(accuracy_strict ~ 
+          group*AoA_scaled + 
+          group*imageability_scaled + 
+          group*frequency_cds_scaled + 
+          group*imageability_scaled*frequency_cds_scaled + 
+          (1 | child_id) + (1 | word),
+        data = data_no %>% filter(task == "P"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_P_NO_simple_cds)
+```
+
+```{r echo = FALSE}
+table10 <- tidy(model_acc_P_NO_simple_cds, effects = "fixed")
+kable(table10, digits = 3)
+```
+
+In case of production AIC and BIC are smaller (indicating better fit)
+CDS is also a *non-significant* predictor of accuracy in production.
+
+```{r echo = FALSE}
+AIC(model_acc_P_NO_simple, model_acc_P_NO_simple_cds)
+BIC(model_acc_P_NO_simple, model_acc_P_NO_simple_cds)
+```
+
+#### RTs Comprehension
+
+First, with SUBTLEX frequency...
+(I'm showing only simple models)
+
+```{r no-comp-rt-1, include = FALSE}
+model_rt_C_NO_simple = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_scaled +
+                              group * imageability_scaled*frequency_scaled + 
+                              (1 | child_id) + (1 | word),
+                          data = data_no_out_outliers %>% filter(task == "C"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_C_NO_simple)
+```
+
+```{r echo = FALSE}
+table11 <- tidy(model_rt_C_NO_simple, effects = "fixed")
+kable(table11, digits = 3)
+```
+
+...Second, with CDS frequency
+
+```{r no-comp-rt-2, include = FALSE}
+model_rt_C_NO_simple_cds = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_cds_scaled +
+                              group * imageability_scaled*frequency_cds_scaled + 
+                              (1 | child_id) + (1 | word),
+                          data = data_no_out_outliers %>% filter(task == "C"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_C_NO_simple_cds)
+```
+
+```{r}
+table12 <- tidy(model_rt_C_NO_simple_cds, effects = "fixed")
+kable(table12, digits = 3)
+```
+
+In case of comprehension RTs AIC and BIC are smaller (indicating better fit)
+CDS is also *non-significant* predictor of accuracy in production.
+
+```{r echo=FALSE}
+AIC(model_rt_C_NO_simple, model_rt_C_NO_simple_cds)
+BIC(model_rt_C_NO_simple, model_rt_C_NO_simple_cds)
+```
+
+#### RTs Production
+
+First, with SUBTLEX frequency...
+(I'm showing only simple models)
+
+```{r no-prod-rt-1, include = FALSE}
+model_rt_P_NO_simple = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_scaled +
+                              group * imageability_scaled*frequency_scaled + 
+                              (1 | child_id) + (1 | word),
+                          data = data_no_out_outliers %>% filter(task == "P"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_P_NO_simple)
+```
+
+```{r echo = FALSE}
+table13 <- tidy(model_rt_P_NO_simple, effects = "fixed")
+kable(table13, digits = 3)
+```
+
+...Second, with CDS frequency
+
+```{r no-prod-rt-2, include = FALSE}
+model_rt_P_NO_simple_cds = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_cds_scaled +
+                              group * imageability_scaled*frequency_cds_scaled + 
+                              (1 | child_id) + (1 | word),
+                          data = data_no_out_outliers %>% filter(task == "P"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_P_NO_simple_cds)
+```
+
+```{r echo = FALSE}
+table15 <- tidy(model_rt_P_NO_simple_cds, effects = "fixed")
+kable(table15, digits = 3)
+```
+
+In case of production RTs AIC and BIC are smaller (indicating better fit).
+CDS is a *non-significant* predictor of accuracy in production.
+
+```{r echo=FALSE}
+AIC(model_rt_P_NO_simple, model_rt_P_NO_simple_cds)
+BIC(model_rt_P_NO_simple, model_rt_P_NO_simple_cds)
+```
+
+
+##  Age effects
+
+##  Polish comprehension
+
+```{r}
+#scale and center age
+data_pl$Age_scaled <- scale(data_pl$Age, center = T, scale = T)
+
+model_acc_C_PL_simple_age = 
+  glmer(accuracy_strict ~ group*(AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+          Age_scaled*(AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+          (1 | child_id) + (1 | word),
+        data = data_pl %>% filter(task == "C"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_C_PL_simple_age)
+```
+
+##  Polish production
+
+```{r}
+model_acc_P_PL_simple_age = 
+  glmer(accuracy_strict ~ group*(AoA_scaled + 
+                                   imageability_scaled + frequency_cds_scaled) +
+          Age_scaled*(AoA_scaled + 
+                        imageability_scaled + 
+                        frequency_cds_scaled) +
+          (1 | child_id) + (1 | word),
+        data = data_pl %>% filter(task == "P"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_P_PL_simple_age)
+```
+
