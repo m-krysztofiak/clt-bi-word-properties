@@ -41,10 +41,9 @@ data_pl_filtered <- data_pl %>%
   filter(!is.na(reaction_time)) %>%
   filter(accuracy_strict == 1) %>%
   filter(reaction_time>=1000) %>%
-  filter(complete.cases(FrequencyLemmaLog, Imageability, AoA))
+  filter(complete.cases(frequency_cds, Imageability, AoA))
 length(data_pl_filtered$reaction_time) 
 #there are 11236 measured reaction times for correct responses and complete cases, RTs>=1000 ms
-#we removed <1% RTs (110/11478)
 
 mean_RT_PL <- data_pl_filtered %>%
   group_by(child_id, task) %>%
