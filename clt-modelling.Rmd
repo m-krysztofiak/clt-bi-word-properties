@@ -103,9 +103,8 @@ data_pl_out_outliers$group <-relevel(factor(data_pl_out_outliers$group), ref="mo
 
 #data with RT outliers for accuracy analyses
 data_pl <- data_pl %>%
-  mutate(frequency_cds_log = log(frequency_cds)) %>% #CDS to log
   mutate(
-     frequency_cds_scaled = scale(frequency_cds_log, 
+     frequency_cds_scaled = scale(log(frequency_cds+1), 
                                       center = T, scale = T),
      frequency_scaled = scale(FrequencyLemmaLog, 
                               center = T, scale = T),
@@ -123,10 +122,9 @@ data_no_filtered <- data_no %>%
   filter(!is.na(reaction_time)) %>%
   filter(accuracy_strict == 1) %>%
   filter(reaction_time>=1000) %>%
-  filter(complete.cases(Frequency, Imageability, AoA))
+  filter(complete.cases(frequency_cds, Imageability, AoA))
 length(data_no_filtered$reaction_time)  
-#there are 9951 measured reaction times for correct responses and complete cases, RTs>=1000 ms
-#we removed 1.4% RTs (142/10093)
+#there are 9850 measured reaction times for correct responses and complete cases, RTs>=1000 ms
   
 mean_RT_NOR <- data_no_filtered %>%
   group_by(child_id, task) %>%
