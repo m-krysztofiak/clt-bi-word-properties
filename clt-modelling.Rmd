@@ -348,7 +348,7 @@ model_acc_P_PL_full_sup =
           group*imageability_scaled + 
           group*frequency_scaled + 
           group*imageability_scaled*frequency_scaled + 
-          (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word),
+          (1 + AoA_scaled + imageability_scaled + frequency_scaled | child_id) + (1 | word),
         data = data_pl %>% filter(task == "P"),
         family = binomial,
         control = glmerControl(optimizer = "bobyqa",
@@ -372,15 +372,32 @@ BIC(model_acc_P_PL_full, model_acc_P_PL_full_sup)
 
 #### RTs Comprehension
 
-First, with SUBTLEX frequency...
-(I'm showing only simple models)
+CDS
+Model with random slopes is singular so we simplify the model 
+and remove random slopes.
 
-```{r pl-comp-rt-1, include=FALSE}
+```{r pl-comp-rt-full, include=FALSE}
+model_rt_C_PL_full = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_cds_scaled +
+                              group * imageability_scaled*frequency_cds_scaled + 
+                              (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) +
+                            (1 | word),
+                          data = data_pl_out_outliers %>% filter(task == "C"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_C_PL_full)
+```
+
+```{r pl-comp-rt-simple, include=FALSE}
 model_rt_C_PL_simple = lmer(logRT ~ group*AoA_scaled + 
                               group*imageability_scaled + 
-                              group*frequency_scaled +
-                              group * imageability_scaled*frequency_scaled + 
-                              (1 | child_id) + (1 | word),
+                              group*frequency_cds_scaled +
+                              group * imageability_scaled*frequency_cds_scaled + 
+                              (1 | child_id) +
+                            (1 | word),
                           data = data_pl_out_outliers %>% filter(task == "C"),
                           control = lmerControl(optimizer = "bobyqa", 
                                                 optCtrl = list(maxfun = 2e5))
@@ -389,82 +406,118 @@ model_rt_C_PL_simple = lmer(logRT ~ group*AoA_scaled +
 summary(model_rt_C_PL_simple)
 ```
 
+
 ```{r echo = FALSE}
 table5 <- tidy(model_rt_C_PL_simple, effects = "fixed")
 kable(table5, digits = 3)
 ```
 
-...Second, with CDS frequency
+SUBTLEX frequency is also singular, so we simply the model 
+and remove random slopes.
 
-```{r pl-comp-rt-2, include = FALSE}
-model_rt_C_PL_simple_cds = lmer(logRT ~ group*AoA_scaled + 
+```{r pl-comp-rt-full-sup, include = FALSE}
+model_rt_C_PL_full_sup = lmer(logRT ~ group*AoA_scaled + 
                               group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              group * imageability_scaled*frequency_cds_scaled + 
-                              (1 | child_id) + (1 | word),
+                              group*frequency_scaled +
+                              group * imageability_scaled*frequency_scaled + 
+                              (1 + AoA_scaled + imageability_scaled + frequency_scaled | child_id) +
+                                (1 | word),
                           data = data_pl_out_outliers %>% filter(task == "C"),
                           control = lmerControl(optimizer = "bobyqa", 
                                                 optCtrl = list(maxfun = 2e5))
 )
                        
-summary(model_rt_C_PL_simple_cds)
+summary(model_rt_C_PL_full_sup)
+```
+
+```{r pl-comp-rt-simple-sup, include = FALSE}
+model_rt_C_PL_simple_sup = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_scaled +
+                              group * imageability_scaled*frequency_scaled + 
+                              (1 | child_id) +
+                                (1 | word),
+                          data = data_pl_out_outliers %>% filter(task == "C"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_C_PL_simple_sup)
 ```
 
 ```{r echo = FALSE}
-table6 <- tidy(model_rt_C_PL_simple_cds, effects = "fixed")
+table6 <- tidy(model_rt_C_PL_simple_sup, effects = "fixed")
 kable(table6, digits = 3)
 ```
 
-In case of comprehension RTs AIC and BIC are smaller (indicating better fit)
+In case of comprehension RTs AIC and BIC are similar.
 CDS is also *significant* predictor of accuracy in production.
 
 ```{r echo=FALSE}
-AIC(model_rt_C_PL_simple, model_rt_C_PL_simple_cds)
-BIC(model_rt_C_PL_simple, model_rt_C_PL_simple_cds)
+AIC(model_rt_C_PL_simple, model_rt_C_PL_simple_sup)
+BIC(model_rt_C_PL_simple, model_rt_C_PL_simple_sup)
 ```
 
 #### RTs Production
 
-First, with SUBTLEX frequency...
-(I'm showing only simple models)
+CDS frequency
 
 ```{r pl-prod-rt-1, include=FALSE}
-model_rt_P_PL_simple = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_scaled +
-                              group * imageability_scaled*frequency_scaled + 
-                              (1 | child_id) + (1 | word),
-                          data = data_pl_out_outliers %>% filter(task == "P"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_P_PL_simple)
-```
-
-```{r echo = FALSE}
-table7 <- tidy(model_rt_P_PL_simple, effects = "fixed")
-kable(table7, digits = 3)
-```
-
-...Second, with CDS frequency
-
-```{r pl-prod-rt-2, include=FALSE}
-model_rt_P_PL_simple_cds = lmer(logRT ~ group*AoA_scaled + 
+model_rt_P_PL_full = lmer(logRT ~ group*AoA_scaled + 
                               group*imageability_scaled + 
                               group*frequency_cds_scaled +
                               group * imageability_scaled*frequency_cds_scaled + 
-                              (1 | child_id) + (1 | word),
+                              (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) +
+                            (1 | word),
                           data = data_pl_out_outliers %>% filter(task == "P"),
                           control = lmerControl(optimizer = "bobyqa", 
                                                 optCtrl = list(maxfun = 2e5))
 )
                        
-summary(model_rt_P_PL_simple_cds)
+summary(model_rt_P_PL_full)
+isSingular(model_rt_P_PL_full) #not singular
 ```
 
 ```{r echo = FALSE}
-table6 <- tidy(model_rt_P_PL_simple_cds, effects = "fixed")
+table7 <- tidy(model_rt_P_PL_full, effects = "fixed")
+kable(table7, digits = 3)
+```
+
+SUBTLEX model is singular so we remove random slopes.
+
+```{r pl-prod-rt-full-sup, include=FALSE}
+model_rt_P_PL_full_sup = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_scaled +
+                              group * imageability_scaled*frequency_scaled + 
+                              (1 + AoA_scaled + imageability_scaled + frequency_scaled | child_id) + 
+                                (1 | word),
+                          data = data_pl_out_outliers %>% filter(task == "P"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_P_PL_full_sup)
+isSingular(model_rt_P_PL_full_sup)
+```
+
+```{r pl-prod-rt-simple-sup, include=FALSE}
+model_rt_P_PL_simple_sup = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_scaled +
+                              group * imageability_scaled*frequency_scaled + 
+                              (1 | child_id) + 
+                                (1 | word),
+                          data = data_pl_out_outliers %>% filter(task == "P"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_P_PL_simple_sup)
+```
+
+```{r echo = FALSE}
+table6 <- tidy(model_rt_P_PL_simple_sup, effects = "fixed")
 kable(table6, digits = 3)
 ```
 
@@ -472,8 +525,8 @@ In case of production RTs AIC and BIC are similar.
 CDS is a *non-significant* predictor of accuracy in production.
 
 ```{r echo = FALSE}
-AIC(model_rt_P_PL_simple, model_rt_P_PL_simple_cds)
-BIC(model_rt_P_PL_simple, model_rt_P_PL_simple_cds)
+AIC(model_rt_P_PL_full, model_rt_P_PL_simple_sup)
+BIC(model_rt_P_PL_full, model_rt_P_PL_simple_sup)
 ```
 
 ### Norwegian
