@@ -533,68 +533,58 @@ BIC(model_rt_P_PL_full, model_rt_P_PL_simple_sup)
 
 #### Comprehension Accuracy
 
-First, with SUBTLEX frequency...
-(I'm showing only simple models)
+CDS
 
-```{r no-comp-acc-1, include = FALSE}
-model_acc_C_NO_simple = 
-  glmer(accuracy_strict ~ 
-          group*AoA_scaled + 
-          group*imageability_scaled + 
-          group*frequency_scaled + 
-          group*imageability_scaled*frequency_scaled + 
-          (1 | child_id) + (1 | word),
-        data = data_no %>% filter(task == "C"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_C_NO_simple)
-```
-
-```{r echo = FALSE}
-table7 <- tidy(model_acc_C_NO_simple, effects = "fixed")
-kable(table7, digits = 3)
-```
-
-...Second, with CDS frequency
-
-```{r no-comp-acc-2, include = FALSE}
-model_acc_C_NO_simple_cds = 
+```{r no-comp-full, include = FALSE}
+model_acc_C_NO_full = 
   glmer(accuracy_strict ~ 
           group*AoA_scaled + 
           group*imageability_scaled + 
           group*frequency_cds_scaled + 
           group*imageability_scaled*frequency_cds_scaled + 
-          (1 | child_id) + (1 | word),
+          (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word),
         data = data_no %>% filter(task == "C"),
         family = binomial,
         control = glmerControl(optimizer = "bobyqa",
                                optCtrl = list(maxfun= 2e5)))
                        
-summary(model_acc_C_NO_simple_cds)
+summary(model_acc_C_NO_full)
 ```
 
 ```{r echo = FALSE}
-table8 <- tidy(model_acc_C_NO_simple_cds, effects = "fixed")
-kable(table8, digits = 3)
+table7 <- tidy(model_acc_C_NO_full, effects = "fixed")
+kable(table7, digits = 3)
 ```
 
-Compare model with SUBTLEX and CDS
-From ChatGPT (but I would verify this) 
-Interpretation:
-Lower AIC/BIC = better model
-ΔAIC:
-< 2 = essentially equivalent
-4–7 = moderate evidence
-10 = strong evidence
+SUBTLEX
+
+```{r no-comp-full-sup, include = FALSE}
+model_acc_C_NO_full_sup = 
+  glmer(accuracy_strict ~ 
+          group*AoA_scaled + 
+          group*imageability_scaled + 
+          group*frequency_scaled + 
+          group*imageability_scaled*frequency_scaled + 
+          (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word),
+        data = data_no %>% filter(task == "C"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_C_NO_full_sup)
+```
+
+```{r echo = FALSE}
+table8 <- tidy(model_acc_C_NO_full_sup, effects = "fixed")
+kable(table8, digits = 3)
+```
 
 In case of comprehension AIC and BIC are smaller (indicating better fit)
 CDS is a *non-significant* predictor of accuracy in production.
 
 ```{r echo=FALSE}
-AIC(model_acc_C_NO_simple, model_acc_C_NO_simple_cds)
-BIC(model_acc_C_NO_simple, model_acc_C_NO_simple_cds)
+AIC(model_acc_C_NO_full, model_acc_C_NO_full_sup)
+BIC(model_acc_C_NO_full, model_acc_C_NO_full_sup)
 ```
 
 #### Production Accuracy
