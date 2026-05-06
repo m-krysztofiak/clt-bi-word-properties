@@ -556,7 +556,7 @@ table7 <- tidy(model_acc_C_NO_full, effects = "fixed")
 kable(table7, digits = 3)
 ```
 
-SUBTLEX
+Norwegian Words
 
 ```{r no-comp-full-sup, include = FALSE}
 model_acc_C_NO_full_sup = 
@@ -612,7 +612,7 @@ table9 <- tidy(model_acc_P_NO_full, effects = "fixed")
 kable(table9, digits = 3)
 ```
 
-SUBTLEX
+Norwegian Words
 
 ```{r no-prod-acc-full-sup, include = FALSE}
 model_acc_P_NO_full_sup = 
@@ -644,15 +644,30 @@ BIC(model_acc_P_NO_full, model_acc_P_NO_full_sup)
 
 #### RTs Comprehension
 
-First, with SUBTLEX frequency...
-(I'm showing only simple models)
+CDS is singular, so we simplify the model by removing random slopes.
 
-```{r no-comp-rt-1, include = FALSE}
+```{r no-comp-rt-full, include = FALSE}
+model_rt_C_NO_full = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_cds_scaled +
+                              group * imageability_scaled*frequency_cds_scaled + 
+                              (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) +
+                            (1 | word),
+                          data = data_no_out_outliers %>% filter(task == "C"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_C_NO_full)
+```
+
+```{r no-comp-rt-simple, include = FALSE}
 model_rt_C_NO_simple = lmer(logRT ~ group*AoA_scaled + 
                               group*imageability_scaled + 
-                              group*frequency_scaled +
-                              group * imageability_scaled*frequency_scaled + 
-                              (1 | child_id) + (1 | word),
+                              group*frequency_cds_scaled +
+                              group * imageability_scaled*frequency_cds_scaled + 
+                              (1 | child_id) +
+                            (1 | word),
                           data = data_no_out_outliers %>% filter(task == "C"),
                           control = lmerControl(optimizer = "bobyqa", 
                                                 optCtrl = list(maxfun = 2e5))
@@ -666,33 +681,48 @@ table11 <- tidy(model_rt_C_NO_simple, effects = "fixed")
 kable(table11, digits = 3)
 ```
 
-...Second, with CDS frequency
+Norwegian Words is singular, so we simplify the model by removing random slopes.
 
-```{r no-comp-rt-2, include = FALSE}
-model_rt_C_NO_simple_cds = lmer(logRT ~ group*AoA_scaled + 
+```{r no-comp-rt-full-sup, include = FALSE}
+model_rt_C_NO_full_sup = lmer(logRT ~ group*AoA_scaled + 
                               group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              group * imageability_scaled*frequency_cds_scaled + 
-                              (1 | child_id) + (1 | word),
+                              group*frequency_scaled +
+                              group * imageability_scaled*frequency_scaled + 
+                              (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) +
+                                (1 | word),
                           data = data_no_out_outliers %>% filter(task == "C"),
                           control = lmerControl(optimizer = "bobyqa", 
                                                 optCtrl = list(maxfun = 2e5))
 )
                        
-summary(model_rt_C_NO_simple_cds)
+summary(model_rt_C_NO_full_sup)
+```
+
+```{r no-comp-rt-simple-sup, include = FALSE}
+model_rt_C_NO_simple_sup = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_scaled +
+                              group * imageability_scaled*frequency_scaled + 
+                              (1 | child_id) +
+                                (1 | word),
+                          data = data_no_out_outliers %>% filter(task == "C"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5))
+)
+                       
+summary(model_rt_C_NO_simple_sup)
 ```
 
 ```{r}
-table12 <- tidy(model_rt_C_NO_simple_cds, effects = "fixed")
+table12 <- tidy(model_rt_C_NO_simple_sup, effects = "fixed")
 kable(table12, digits = 3)
 ```
 
 In case of comprehension RTs AIC and BIC are smaller (indicating better fit)
-CDS is also *non-significant* predictor of accuracy in production.
 
 ```{r echo=FALSE}
-AIC(model_rt_C_NO_simple, model_rt_C_NO_simple_cds)
-BIC(model_rt_C_NO_simple, model_rt_C_NO_simple_cds)
+AIC(model_rt_C_NO_simple, model_rt_C_NO_simple_sup)
+BIC(model_rt_C_NO_simple, model_rt_C_NO_simple_sup)
 ```
 
 #### RTs Production
