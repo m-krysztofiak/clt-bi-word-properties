@@ -316,50 +316,49 @@ BIC(model_acc_C_PL_full_sup, model_acc_C_PL_full)
 
 #### Production Accuracy
 
-First, with SUBTLEX frequency...
-(I'm showing only simple models)
+CDS frequency 
 
 ```{r pl-prod-acc-1, include=FALSE}
-model_acc_P_PL_simple = 
-  glmer(accuracy_strict ~ 
-          group*AoA_scaled + 
-          group*imageability_scaled + 
-          group*frequency_scaled + 
-          group*imageability_scaled*frequency_scaled + 
-          (1 | child_id) + (1 | word),
-        data = data_pl %>% filter(task == "P"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_P_PL_simple)
-```
-
-```{r echo = FALSE}
-table3 <- tidy(model_acc_P_PL_simple, effects = "fixed")
-kable(table3, digits = 3)
-```
-
-...Second, with CDS frequency
-
-```{r pl-prod-acc-2, include = FALSE}
-model_acc_P_PL_simple_cds = 
+model_acc_P_PL_full = 
   glmer(accuracy_strict ~ 
           group*AoA_scaled + 
           group*imageability_scaled + 
           group*frequency_cds_scaled + 
           group*imageability_scaled*frequency_cds_scaled + 
-          (1 | child_id) + (1 | word),
+          (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word),
         data = data_pl %>% filter(task == "P"),
         family = binomial,
         control = glmerControl(optimizer = "bobyqa",
                                optCtrl = list(maxfun= 2e5)))
                        
-summary(model_acc_P_PL_simple_cds)
+summary(model_acc_P_PL_full)
 ```
 
 ```{r echo = FALSE}
-table4 <- tidy(model_acc_P_PL_simple_cds, effects = "fixed")
+table3 <- tidy(model_acc_P_PL_full, effects = "fixed")
+kable(table3, digits = 3)
+```
+
+...Second, with SUBTLEX frequency
+
+```{r pl-prod-acc-sup, include = FALSE}
+model_acc_P_PL_full_sup = 
+  glmer(accuracy_strict ~ 
+          group*AoA_scaled + 
+          group*imageability_scaled + 
+          group*frequency_scaled + 
+          group*imageability_scaled*frequency_scaled + 
+          (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word),
+        data = data_pl %>% filter(task == "P"),
+        family = binomial,
+        control = glmerControl(optimizer = "bobyqa",
+                               optCtrl = list(maxfun= 2e5)))
+                       
+summary(model_acc_P_PL_full_sup)
+```
+
+```{r echo = FALSE}
+table4 <- tidy(model_acc_P_PL_full_sup, effects = "fixed")
 kable(table4, digits = 3)
 ```
 
@@ -367,8 +366,8 @@ In case of production AIC and BIC are larger (indicating worse fit)
 CDS is also a *non-significant* predictor of accuracy in production.
 
 ```{r echo=FALSE}
-AIC(model_acc_P_PL_simple, model_acc_P_PL_simple_cds)
-BIC(model_acc_P_PL_simple, model_acc_P_PL_simple_cds)
+AIC(model_acc_P_PL_full, model_acc_P_PL_full_sup)
+BIC(model_acc_P_PL_full, model_acc_P_PL_full_sup)
 ```
 
 #### RTs Comprehension
