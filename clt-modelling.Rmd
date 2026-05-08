@@ -437,4 +437,147 @@ summary(models_rt$norwegian_c_rt)
 summary(models_rt$norwegian_p_rt)
 ```
 
-#
+# Exposure and Accuracy
+
+```{r select-bi}
+data_full %>% filter(group == "bi") -> data_bi_full
+```
+
+```{r explore-exposure}
+data_bi_full %>% 
+  distinct(child_id, no_input_sum_percentage) %>%
+  ggplot(aes(x = no_input_sum_percentage)) +
+  geom_density()
+  
+data_bi_full %>% 
+  distinct(child_id, pl_input_sum_percentage) %>%
+  ggplot(aes(x = pl_input_sum_percentage)) +
+  geom_density()
+```
+
+```{r exposure-accuracy-models}
+conditions <- list(
+  polish_p_exposure    = list(language = "POLISH",
+                              task = "P",
+                              input_var = "pl_input_sum_percentage"),
+  polish_c_exposure    = list(language = "POLISH",
+                              task = "C",
+                              input_var = "pl_input_sum_percentage"),
+  norwegian_p_exposure = list(language = "NORWEGIAN",
+                              task = "P",
+                              input_var = "no_input_sum_percentage"),
+  norwegian_c_exposure = list(language = "NORWEGIAN",
+                              task = "C",
+                              input_var = "no_input_sum_percentage")
+)
+
+models_acc_exposure <- lapply(conditions, function(cond) {
+  df_sub <- subset(data_bi_full, language == cond$language & task == cond$task)
+  
+  formula_glmer <- as.formula(paste0(
+    "accuracy_strict ~ ", cond$input_var, " * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+     Age_scaled + imageability_scaled * frequency_cds_scaled +
+     (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word)"
+  ))
+  
+  glmer(formula_glmer, data = df_sub, control = ctrl, family = binomial)
+})
+```
+
+```{r convergence-acc-exposure-checks}
+lapply(models_acc_exposure, function(m) {
+  w <- m@optinfo$conv$lme4$messages
+  if (is.null(w)) "OK" else w
+})
+```
+
+### Polish Comprehension
+
+```{r}
+summary(models_acc_exposure$polish_c_exposure)
+```
+ 
+### Polish Production
+
+```{r}
+summary(models_acc_exposure$polish_p_exposure)
+```
+ 
+### Norwegian Comprehension
+
+```{r}
+summary(models_acc_exposure$norwegian_c_exposure)
+``` 
+ 
+### Norwegian Production
+
+```{r}
+summary(models_acc_exposure$norwegian_p_exposure)
+``` 
+  
+# Exposure and RTs
+
+```{r select-bi-no-outliers}
+data_full_out_outliers %>% filter(group == "bi") -> data_bi_full_rt
+```
+
+```{r exposure-rt-models}
+conditions <- list(
+  polish_p_exposure_rt    = list(language = "POLISH",
+                              task = "P",
+                              input_var = "pl_input_sum_percentage"),
+  polish_c_exposure_rt    = list(language = "POLISH",
+                              task = "C",
+                              input_var = "pl_input_sum_percentage"),
+  norwegian_p_exposure_rt = list(language = "NORWEGIAN",
+                              task = "P",
+                              input_var = "no_input_sum_percentage"),
+  norwegian_c_exposure_rt = list(language = "NORWEGIAN",
+                              task = "C",
+                              input_var = "no_input_sum_percentage")
+)
+
+models_rt_exposure <- lapply(conditions, function(cond) {
+  df_sub <- subset(data_bi_full_rt, language == cond$language & task == cond$task)
+  
+  formula_lmer <- as.formula(paste0(
+    "logRT ~ ", cond$input_var, " * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+     Age_scaled + imageability_scaled * frequency_cds_scaled +
+     (1 | child_id) + (1 | word)"
+  ))
+  
+  lmer(formula_lmer, data = df_sub, control = ctrl, REML = TRUE)
+})
+```
+
+```{r convergence-rt-exposure-checks}
+lapply(models_rt_exposure, function(m) {
+  w <- m@optinfo$conv$lme4$messages
+  if (is.null(w)) "OK" else w
+})
+```
+
+### Polish Comprehension
+
+```{r}
+summary(models_rt_exposure$polish_c_exposure)
+```
+ 
+### Polish Production
+
+```{r}
+summary(models_rt_exposure$polish_p_exposure)
+```
+ 
+### Norwegian Comprehension
+
+```{r}
+summary(models_rt_exposure$norwegian_c_exposure)
+``` 
+ 
+### Norwegian Production
+
+```{r}
+summary(models_rt_exposure$norwegian_p_exposure)
+``` 
+  
