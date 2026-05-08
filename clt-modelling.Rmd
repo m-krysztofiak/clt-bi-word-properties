@@ -8,6 +8,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning = FALSE)
+options(scipen = 999) #removes scietific notation
 ```
 
 ```{r libraries, include=FALSE}
@@ -239,16 +240,6 @@ df_num %>%
        y = "CDS")
 ```
 
-##  Age effects
-
-Age is scaled and centered.
-
-```{r}
-#scale and center age
-data_pl$Age_scaled <- scale(data_pl$Age, center = T, scale = T)
-data_no$Age_scaled <- scale(data_no$Age, center = T, scale = T)
-```
-
 ## Accuracy Models
 
 We run all models together (divided only into accuracy and RTs):
@@ -257,269 +248,193 @@ We run all models together (divided only into accuracy and RTs):
 2) Run and view accuracy models
 3) Summarise the results
 
+### Scale age and bind data
+
+```{r acc-data-scale-age}
+#scale and center age
+data_pl$Age_scaled <- scale(data_pl$Age, center = T, scale = T)
+data_no$Age_scaled <- scale(data_no$Age, center = T, scale = T)
+```
+
 ```{r bind data}
 bind_rows(data_pl, data_no) %>%
   mutate(group = if_else(group == "bi","bi","mono")) %>%
   mutate(group = fct_relevel(group, "mono", "bi")) -> data_full
 ```
 
-```{r accuracy-models}
-library(purrr)
+### Prepare models
 
-# Define fixed parts once
-rhs <- "~ group*(AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-          Age_scaled*(AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-          (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word) + imageability_scaled * frequency_cds_scaled"
+```{r models-accuracy-all}
+formula_glmer <- accuracy_strict ~ group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+                        Age_scaled * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+                        imageability_scaled * frequency_cds_scaled +
+                        (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) +
+  (1 | word)
 
 ctrl <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
 
-# Define what varies
-dvs   <- c("accuracy_strict")
-tasks <- c("P", "C")
-language <- c("POLISH", "NORWEGIAN")
+#models
+conditions <- list(
+  polish_p_acc    = list(language = "POLISH",    task = "P"),
+  polish_c_acc    = list(language = "POLISH",    task = "C"),
+  norwegian_p_acc = list(language = "NORWEGIAN", task = "P"),
+  norwegian_c_acc = list(language = "NORWEGIAN", task = "C")
+)
 
-# Create all combinations
-combos <- expand.grid(dv = dvs, 
-                      language = language, 
-                      task = tasks, stringsAsFactors = FALSE)
-
-# Fit all models
-models <- pmap(combos, function(dv, language, task) {
-  glmer(
-    as.formula(paste(dv, rhs)),
-    data    = data_full %>% filter(language == !!language) %>% filter(task == !!task),
-    family  = binomial,
-    control = ctrl
-  )
+models_acc <- lapply(conditions, function(cond) {
+  df_sub <- subset(data_full, language == cond$language & task == cond$task)
+  glmer(formula_glmer, data = df_sub, control = ctrl, family = binomial)
 })
 
-# Name them clearly, e.g. "accuracy_strict.P", "accuracy_strict.C"
-names(models) <- paste(combos$dv, combos$language, combos$task, sep = ".")
+# models
+summary(models_acc)
 ```
 
 Check convergence:
 No warnings.
 
-```{r convergence-checks}
-convergence_check <- map_dfr(models, function(m) {
-  # Safely extract gradient
-  derivs <- m@optinfo$derivs
-  max_grad <- if (!is.null(derivs) && !is.null(derivs$gradient)) {
-    max(abs(derivs$gradient))
-  } else {
-    NA_real_
-  }
-  
-  # Safely extract warnings
-  warns <- m@optinfo$conv$lme4$messages
-  warn_str <- if (!is.null(warns)) paste(warns, collapse = "; ") else ""
-  
-  tibble(
-    singular     = isSingular(m),
-    warnings     = warn_str
-  )
-}, .id = "model")
-
-convergence_check
+```{r convergence-acc-checks}
+lapply(models_acc, function(m) {
+  w <- m@optinfo$conv$lme4$messages
+  if (is.null(w)) "OK" else w
+})
 ```
 
 ### Polish Comprehension
 
 ```{r}
-summary(models$accuracy_strict.POLISH.C)
+summary(models_acc$polish_c_acc)
 ```
 
 ### Polish Production
 
 ```{r}
-summary(models$accuracy_strict.POLISH.P)
+summary(models_acc$polish_p_acc)
 ```
-
 
 ### Norwegian Comprehension
 
 ```{r}
-summary(models$accuracy_strict.NORWEGIAN.C)
+summary(models_acc$norwegian_c_acc)
 ```
 
 ### Norwegian Production
 
 ```{r}
-summary(models$accuracy_strict.NORWEGIAN.P)
+summary(models_acc$norwegian_p_acc)
 ```
 
 ##  RTs models
 
-```{r}
+### Scale age and bind data
+
+```{r rt-data-scale-age}
 #scale and center age
 data_pl_out_outliers$Age_scaled <- scale(data_pl_out_outliers$Age, center = T, scale = T)
 data_no_out_outliers$Age_scaled <- scale(data_no_out_outliers$Age, center = T, scale = T)
 ```
 
-I will try to run all models together (divided only into accuracy and RTs):
-
-1) Bind Polish and Norwegian data
-2) Run and view accuracy models
-3) Summarise the results
-
-```{r bind data}
+```{r bind-rt-data}
 bind_rows(data_pl_out_outliers, data_no_out_outliers) %>%
   mutate(group = if_else(group == "bi","bi","mono")) %>%
   mutate(group = fct_relevel(group, "mono", "bi")) -> data_full_out_outliers
 ```
 
-```{r}
-library(purrr)
+### Prepare all models
 
-# Define fixed parts once
-rhs <- "~ group*(AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-          Age_scaled*(AoA_scaled + imageability_scaled + frequency_cds_scaled) + 
-(1 | child_id) + (1 | word) + imageability_scaled * frequency_cds_scaled"
+First more complex with random slopes:
+
+```{r models-rts-all}
+formula_lmer <- logRT ~ group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+                        Age_scaled * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+                        imageability_scaled * frequency_cds_scaled +
+                        (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + 
+  (1 | word)
 
 ctrl <- lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
 
-# Define what varies
-dvs   <- c("logRT")
-tasks <- c("P", "C")
-language <- c("POLISH", "NORWEGIAN")
+#models
+conditions <- list(
+  polish_p_rt    = list(language = "POLISH",    task = "P"),
+  polish_c_rt    = list(language = "POLISH",    task = "C"),
+  norwegian_p_rt = list(language = "NORWEGIAN", task = "P"),
+  norwegian_c_rt = list(language = "NORWEGIAN", task = "C")
+)
 
-# Create all combinations
-combos <- expand.grid(dv = dvs, 
-                      language = language, 
-                      task = tasks, stringsAsFactors = FALSE)
-
-# Fit all models
-models <- pmap(combos, function(dv, language, task) {
-  lmer(
-    as.formula(paste(dv, rhs)),
-    data    = data_full_out_outliers %>% 
-      filter(language == !!language) %>% filter(task == !!task),
-    control = ctrl
-  )
+models_rt <- lapply(conditions, function(cond) {
+  df_sub <- subset(data_full_out_outliers, language == cond$language & task == cond$task)
+  lmer(formula_lmer, data = df_sub, control = ctrl, REML = TRUE)
 })
 
-# Name them clearly, e.g. "accuracy_strict.P", "accuracy_strict.C"
-names(models) <- paste(combos$dv, combos$language, combos$task, sep = ".")
+# models
+summary(models_rt)
+```
+
+Most models did not converge: _boundary (singular) fit_
+
+```{r convergence-rt-checks}
+lapply(models_rt, function(m) {
+  w <- m@optinfo$conv$lme4$messages
+  if (is.null(w)) "OK" else w
+})
+```
+
+We proceed with simpler models (no random slopes)
+
+```{r models-rts-all-simple}
+formula_lmer_simpler <- logRT ~ group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+                        Age_scaled * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+                        imageability_scaled * frequency_cds_scaled +
+                        (1 | child_id) + (1 | word)
+
+ctrl <- lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
+
+#models
+conditions <- list(
+  polish_p_rt    = list(language = "POLISH",    task = "P"),
+  polish_c_rt    = list(language = "POLISH",    task = "C"),
+  norwegian_p_rt = list(language = "NORWEGIAN", task = "P"),
+  norwegian_c_rt = list(language = "NORWEGIAN", task = "C")
+)
+
+models_rt_simpler <- lapply(conditions, function(cond) {
+  df_sub <- subset(data_full_out_outliers, language == cond$language & task == cond$task)
+  lmer(formula_lmer_simpler, data = df_sub, control = ctrl, REML = TRUE)
+})
+
+# models
+summary(models_rt_simpler)
+```
+
+```{r convergence-rt-checks-2}
+lapply(models_rt_simpler, function(m) {
+  w <- m@optinfo$conv$lme4$messages
+  if (is.null(w)) "OK" else w
+})
 ```
 
 # Polish Comprehension
 
 ```{r}
-summary(models_rt$logRT.POLISH.C)
+summary(models_rt$polish_c_rt)
 ```
 
 # Polish Production
 
 ```{r}
-summary(models_rt$logRT.POLISH.P)
+summary(models_rt$polish_p_rt)
 ```
 
 # Norwegian Comprehension
 
 ```{r}
-summary(models_rt$logRT.NORWEGIAN.C)
+summary(models_rt$norwegian_c_rt)
 ```
 
 # Norwegian Production
 
 ```{r}
-summary(models_rt$logRT.NORWEGIAN.P)
+summary(models_rt$norwegian_p_rt)
 ```
 
-```{r}
-data_full_out_outliers %>%
-  filter(language == "NORWEGIAN", task == "P") %>%
-  summarise(across(
-    c(logRT, AoA_scaled, imageability_scaled,
-      frequency_cds_scaled, Age_scaled),
-    ~ sum(!is.na(.))
-  ))
-```
-
-#RT models classic
-
-PL COMP
-
-```{r}
-rt_pl_comp_age = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              Age_scaled*AoA_scaled + 
-                              Age_scaled*imageability_scaled + 
-                              Age_scaled*frequency_cds_scaled +
-                              imageability_scaled*frequency_cds_scaled +
-                              (1 | child_id) + (1 | word),
-                          data = data_full_out_outliers %>% 
-                            filter(task == "C") %>% filter(language == "POLISH"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5)))
-
-summary(rt_pl_comp_age)
-```
-
-```{r}
-rt_pl_prod_age = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              Age_scaled*AoA_scaled + 
-                              Age_scaled*imageability_scaled + 
-                              Age_scaled*frequency_cds_scaled +
-                              imageability_scaled*frequency_cds_scaled +
-                              (1 | child_id) + (1 | word),
-                          data = data_full_out_outliers %>% 
-                            filter(task == "P") %>% filter(language == "POLISH"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5)))
-
-summary(rt_pl_prod_age)
-```
-
-#NO
-
-```{r}
-rt_no_comp_age = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              Age_scaled*AoA_scaled + 
-                              Age_scaled*imageability_scaled + 
-                              Age_scaled*frequency_cds_scaled +
-                              imageability_scaled*frequency_cds_scaled +
-                              (1 | child_id) + (1 | word),
-                          data = data_full_out_outliers %>% 
-                            filter(task == "C") %>% filter(language == "NORWEGIAN"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5)))
-
-summary(rt_no_comp_age)
-```
-
-```{r}
-rt_no__prod_age = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              Age_scaled*AoA_scaled + 
-                              Age_scaled*imageability_scaled + 
-                              Age_scaled*frequency_cds_scaled +
-                              imageability_scaled*frequency_cds_scaled +
-                              (1 | child_id) + (1 | word),
-                          data = data_full_out_outliers %>% 
-                            filter(task == "P") %>% filter(language == "NORWEGIAN"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5)))
-
-summary(rt_no_prod_age)
-```
-
-# Exposure
-
-```{r}
-cor.test(data_no$Age, data_no$no_input_sum_percentage, method = "spearman")
-data_no %>% ggplot(aes(x = no_input_sum_percentage, y = Age)) +
-  geom_point()
-
-data_pl %>% ggplot(aes(x = pl_input_sum_percentage, y = Age)) +
-  geom_point()
-
-cor.test(data_pl$Age, data_no$pl_input_sum_percentage, method = "spearman")
-```
 
