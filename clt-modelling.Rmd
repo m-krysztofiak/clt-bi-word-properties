@@ -43,7 +43,8 @@ data_pl_filtered <- data_pl %>%
   filter(reaction_time>=1000) %>%
   filter(complete.cases(frequency_cds, Imageability, AoA))
 length(data_pl_filtered$reaction_time) 
-#there are 11236 measured reaction times for correct responses and complete cases, RTs>=1000 ms
+#there are 11236 measured reaction times for correct responses and complete cases, 
+#RTs>=1000 ms
 
 mean_RT_PL <- data_pl_filtered %>%
   group_by(child_id, task) %>%
@@ -240,15 +241,19 @@ df_num %>%
 
 ##  Age effects
 
+Age is scaled and centered.
+
 ```{r}
 #scale and center age
 data_pl$Age_scaled <- scale(data_pl$Age, center = T, scale = T)
 data_no$Age_scaled <- scale(data_no$Age, center = T, scale = T)
 ```
 
-I will try to run all models together (divided only into accuracy and RTs):
+## Accuracy Models
 
-1) Bind Polish and Norwegian data
+We run all models together (divided only into accuracy and RTs):
+
+1) Bind Polish and Norwegian data (with outliers)
 2) Run and view accuracy models
 3) Summarise the results
 
@@ -257,8 +262,6 @@ bind_rows(data_pl, data_no) %>%
   mutate(group = if_else(group == "bi","bi","mono")) %>%
   mutate(group = fct_relevel(group, "mono", "bi")) -> data_full
 ```
-
-## Accuracy Models
 
 ```{r accuracy-models}
 library(purrr)
@@ -350,7 +353,7 @@ summary(models$accuracy_strict.NORWEGIAN.P)
 ```{r}
 #scale and center age
 data_pl_out_outliers$Age_scaled <- scale(data_pl_out_outliers$Age, center = T, scale = T)
-data_pl_out_outliers$Age_scaled <- scale(data_pl_out_outliers$Age, center = T, scale = T)
+data_no_out_outliers$Age_scaled <- scale(data_no_out_outliers$Age, center = T, scale = T)
 ```
 
 I will try to run all models together (divided only into accuracy and RTs):
