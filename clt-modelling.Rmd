@@ -238,612 +238,285 @@ df_num %>%
        y = "CDS")
 ```
 
-##  Mixed Models
-
-### Polish
-
-#### Comprehension Accuracy
-
-We begin our analyses with more complex models that include 
-by-child random slopes for the lexical predictors, 
-and then proceed to simpler models to evaluate 
-whether the added complexity improves model fit and interpretability.
-
-CDS frequency (main text)
-
-```{r pl-comp-acc-full, include=FALSE}
-model_acc_C_PL_full = 
-  glmer(accuracy_strict ~ 
-          group*AoA_scaled + 
-          group*imageability_scaled + 
-          group*frequency_cds_scaled + 
-          group*imageability_scaled*frequency_cds_scaled + 
-          (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + 
-          (1 | word),
-        data = data_pl %>% filter(task == "C"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_C_PL_full)
-```
-
-```{r echo = FALSE}
-table1 <- tidy(model_acc_C_PL_full, effects = "fixed")
-kable(table1, digits = 3)
-```
-
-SUBTLEX frequency (supplementary materials)
-
-```{r pl-comp-acc-sup, include=FALSE}
-model_acc_C_PL_full_sup = 
-  glmer(accuracy_strict ~ 
-          group*AoA_scaled + 
-          group*imageability_scaled + 
-          group*frequency_scaled + 
-          group*imageability_scaled*frequency_scaled + 
-          (1 + AoA_scaled + imageability_scaled + frequency_scaled | child_id) + 
-          (1 | word),
-        data = data_pl %>% filter(task == "C"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_C_PL_full_sup)
-```
-
-```{r echo = FALSE}
-table2 <- tidy(model_acc_C_PL_full_sup, effects = "fixed")
-kable(table2, digits = 3)
-```
-
-Compare model with SUBTLEX and CDS
-From ChatGPT (but I would verify this) 
-Interpretation:
-Lower AIC/BIC = better model
-ΔAIC:
-< 2 = essentially equivalent
-4–7 = moderate evidence
-10 = strong evidence
-
-In case of comprehension AIC and BIC are smaller (indicating better fit)
-CDS is also a *non-significant* predictor of accuracy in production.
-
-```{r echo=FALSE}
-AIC(model_acc_C_PL_full_sup, model_acc_C_PL_full)
-BIC(model_acc_C_PL_full_sup, model_acc_C_PL_full)
-```
-
-#### Production Accuracy
-
-CDS frequency 
-
-```{r pl-prod-acc-1, include=FALSE}
-model_acc_P_PL_full = 
-  glmer(accuracy_strict ~ 
-          group*AoA_scaled + 
-          group*imageability_scaled + 
-          group*frequency_cds_scaled + 
-          group*imageability_scaled*frequency_cds_scaled + 
-          (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word),
-        data = data_pl %>% filter(task == "P"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_P_PL_full)
-```
-
-```{r echo = FALSE}
-table3 <- tidy(model_acc_P_PL_full, effects = "fixed")
-kable(table3, digits = 3)
-```
-
-...Second, with SUBTLEX frequency
-
-```{r pl-prod-acc-sup, include = FALSE}
-model_acc_P_PL_full_sup = 
-  glmer(accuracy_strict ~ 
-          group*AoA_scaled + 
-          group*imageability_scaled + 
-          group*frequency_scaled + 
-          group*imageability_scaled*frequency_scaled + 
-          (1 + AoA_scaled + imageability_scaled + frequency_scaled | child_id) + (1 | word),
-        data = data_pl %>% filter(task == "P"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_P_PL_full_sup)
-```
-
-```{r echo = FALSE}
-table4 <- tidy(model_acc_P_PL_full_sup, effects = "fixed")
-kable(table4, digits = 3)
-```
-
-In case of production AIC and BIC are larger (indicating worse fit)
-CDS is also a *non-significant* predictor of accuracy in production.
-
-```{r echo=FALSE}
-AIC(model_acc_P_PL_full, model_acc_P_PL_full_sup)
-BIC(model_acc_P_PL_full, model_acc_P_PL_full_sup)
-```
-
-#### RTs Comprehension
-
-CDS
-Model with random slopes is singular so we simplify the model 
-and remove random slopes.
-
-```{r pl-comp-rt-full, include=FALSE}
-model_rt_C_PL_full = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              group * imageability_scaled*frequency_cds_scaled + 
-                              (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) +
-                            (1 | word),
-                          data = data_pl_out_outliers %>% filter(task == "C"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_C_PL_full)
-```
-
-```{r pl-comp-rt-simple, include=FALSE}
-model_rt_C_PL_simple = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              group * imageability_scaled*frequency_cds_scaled + 
-                              (1 | child_id) +
-                            (1 | word),
-                          data = data_pl_out_outliers %>% filter(task == "C"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_C_PL_simple)
-```
-
-
-```{r echo = FALSE}
-table5 <- tidy(model_rt_C_PL_simple, effects = "fixed")
-kable(table5, digits = 3)
-```
-
-SUBTLEX frequency is also singular, so we simply the model 
-and remove random slopes.
-
-```{r pl-comp-rt-full-sup, include = FALSE}
-model_rt_C_PL_full_sup = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_scaled +
-                              group * imageability_scaled*frequency_scaled + 
-                              (1 + AoA_scaled + imageability_scaled + frequency_scaled | child_id) +
-                                (1 | word),
-                          data = data_pl_out_outliers %>% filter(task == "C"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_C_PL_full_sup)
-```
-
-```{r pl-comp-rt-simple-sup, include = FALSE}
-model_rt_C_PL_simple_sup = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_scaled +
-                              group * imageability_scaled*frequency_scaled + 
-                              (1 | child_id) +
-                                (1 | word),
-                          data = data_pl_out_outliers %>% filter(task == "C"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_C_PL_simple_sup)
-```
-
-```{r echo = FALSE}
-table6 <- tidy(model_rt_C_PL_simple_sup, effects = "fixed")
-kable(table6, digits = 3)
-```
-
-In case of comprehension RTs AIC and BIC are similar.
-CDS is also *significant* predictor of accuracy in production.
-
-```{r echo=FALSE}
-AIC(model_rt_C_PL_simple, model_rt_C_PL_simple_sup)
-BIC(model_rt_C_PL_simple, model_rt_C_PL_simple_sup)
-```
-
-#### RTs Production
-
-CDS frequency
-
-```{r pl-prod-rt-1, include=FALSE}
-model_rt_P_PL_full = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              group * imageability_scaled*frequency_cds_scaled + 
-                              (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) +
-                            (1 | word),
-                          data = data_pl_out_outliers %>% filter(task == "P"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_P_PL_full)
-isSingular(model_rt_P_PL_full) #not singular
-```
-
-```{r echo = FALSE}
-table7 <- tidy(model_rt_P_PL_full, effects = "fixed")
-kable(table7, digits = 3)
-```
-
-SUBTLEX model is singular so we remove random slopes.
-
-```{r pl-prod-rt-full-sup, include=FALSE}
-model_rt_P_PL_full_sup = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_scaled +
-                              group * imageability_scaled*frequency_scaled + 
-                              (1 + AoA_scaled + imageability_scaled + frequency_scaled | child_id) + 
-                                (1 | word),
-                          data = data_pl_out_outliers %>% filter(task == "P"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_P_PL_full_sup)
-isSingular(model_rt_P_PL_full_sup)
-```
-
-```{r pl-prod-rt-simple-sup, include=FALSE}
-model_rt_P_PL_simple_sup = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_scaled +
-                              group * imageability_scaled*frequency_scaled + 
-                              (1 | child_id) + 
-                                (1 | word),
-                          data = data_pl_out_outliers %>% filter(task == "P"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_P_PL_simple_sup)
-```
-
-```{r echo = FALSE}
-table6 <- tidy(model_rt_P_PL_simple_sup, effects = "fixed")
-kable(table6, digits = 3)
-```
-
-In case of production RTs AIC and BIC are similar.
-CDS is a *non-significant* predictor of accuracy in production.
-
-```{r echo = FALSE}
-AIC(model_rt_P_PL_full, model_rt_P_PL_simple_sup)
-BIC(model_rt_P_PL_full, model_rt_P_PL_simple_sup)
-```
-
-### Norwegian
-
-#### Comprehension Accuracy
-
-CDS
-
-```{r no-comp-full, include = FALSE}
-model_acc_C_NO_full = 
-  glmer(accuracy_strict ~ 
-          group*AoA_scaled + 
-          group*imageability_scaled + 
-          group*frequency_cds_scaled + 
-          group*imageability_scaled*frequency_cds_scaled + 
-          (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word),
-        data = data_no %>% filter(task == "C"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_C_NO_full)
-```
-
-```{r echo = FALSE}
-table7 <- tidy(model_acc_C_NO_full, effects = "fixed")
-kable(table7, digits = 3)
-```
-
-Norwegian Words
-
-```{r no-comp-full-sup, include = FALSE}
-model_acc_C_NO_full_sup = 
-  glmer(accuracy_strict ~ 
-          group*AoA_scaled + 
-          group*imageability_scaled + 
-          group*frequency_scaled + 
-          group*imageability_scaled*frequency_scaled + 
-          (1 + AoA_scaled + imageability_scaled + frequency_scaled | child_id) + (1 | word),
-        data = data_no %>% filter(task == "C"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_C_NO_full_sup)
-```
-
-```{r echo = FALSE}
-table8 <- tidy(model_acc_C_NO_full_sup, effects = "fixed")
-kable(table8, digits = 3)
-```
-
-In case of comprehension AIC and BIC are smaller (indicating better fit)
-CDS is a *non-significant* predictor of accuracy in production.
-
-```{r echo=FALSE}
-AIC(model_acc_C_NO_full, model_acc_C_NO_full_sup)
-BIC(model_acc_C_NO_full, model_acc_C_NO_full_sup)
-```
-
-#### Production Accuracy
-
-CDS
-
-```{r no-prod-acc-full, include = FALSE}
-model_acc_P_NO_full = 
-  glmer(accuracy_strict ~ 
-          group*AoA_scaled + 
-          group*imageability_scaled + 
-          group*frequency_cds_scaled + 
-          group*imageability_scaled*frequency_cds_scaled + 
-          (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word),
-        data = data_no %>% filter(task == "P"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_P_NO_full)
-```
-
-```{r echo = FALSE}
-table9 <- tidy(model_acc_P_NO_full, effects = "fixed")
-kable(table9, digits = 3)
-```
-
-Norwegian Words
-
-```{r no-prod-acc-full-sup, include = FALSE}
-model_acc_P_NO_full_sup = 
-  glmer(accuracy_strict ~ 
-          group*AoA_scaled + 
-          group*imageability_scaled + 
-          group*frequency_scaled + 
-          group*imageability_scaled*frequency_scaled + 
-          (1 + AoA_scaled + imageability_scaled + frequency_scaled | child_id) + (1 | word),
-        data = data_no %>% filter(task == "P"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_P_NO_full_sup)
-```
-
-```{r echo = FALSE}
-table10 <- tidy(model_acc_P_NO_full_sup, effects = "fixed")
-kable(table10, digits = 3)
-```
-
-In case of production AIC and BIC are similar.
-
-```{r echo = FALSE}
-AIC(model_acc_P_NO_full, model_acc_P_NO_full_sup)
-BIC(model_acc_P_NO_full, model_acc_P_NO_full_sup)
-```
-
-#### RTs Comprehension
-
-CDS is singular, so we simplify the model by removing random slopes.
-
-```{r no-comp-rt-full, include = FALSE}
-model_rt_C_NO_full = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              group * imageability_scaled*frequency_cds_scaled + 
-                              (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) +
-                            (1 | word),
-                          data = data_no_out_outliers %>% filter(task == "C"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_C_NO_full)
-```
-
-```{r no-comp-rt-simple, include = FALSE}
-model_rt_C_NO_simple = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              group * imageability_scaled*frequency_cds_scaled + 
-                              (1 | child_id) +
-                            (1 | word),
-                          data = data_no_out_outliers %>% filter(task == "C"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_C_NO_simple)
-```
-
-```{r echo = FALSE}
-table11 <- tidy(model_rt_C_NO_simple, effects = "fixed")
-kable(table11, digits = 3)
-```
-
-Norwegian Words is singular, so we simplify the model by removing random slopes.
-
-```{r no-comp-rt-full-sup, include = FALSE}
-model_rt_C_NO_full_sup = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_scaled +
-                              group * imageability_scaled*frequency_scaled + 
-                              (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) +
-                                (1 | word),
-                          data = data_no_out_outliers %>% filter(task == "C"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_C_NO_full_sup)
-```
-
-```{r no-comp-rt-simple-sup, include = FALSE}
-model_rt_C_NO_simple_sup = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_scaled +
-                              group * imageability_scaled*frequency_scaled + 
-                              (1 | child_id) +
-                                (1 | word),
-                          data = data_no_out_outliers %>% filter(task == "C"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_C_NO_simple_sup)
-```
-
-```{r}
-table12 <- tidy(model_rt_C_NO_simple_sup, effects = "fixed")
-kable(table12, digits = 3)
-```
-
-In case of comprehension RTs AIC and BIC are smaller (indicating better fit)
-
-```{r echo=FALSE}
-AIC(model_rt_C_NO_simple, model_rt_C_NO_simple_sup)
-BIC(model_rt_C_NO_simple, model_rt_C_NO_simple_sup)
-```
-
-#### RTs Production
-
-CDS is singular, so we simplify the model by removing random slopes.
-
-```{r no-prod-rt-full, include = FALSE}
-model_rt_P_NO_full = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              group * imageability_scaled*frequency_cds_scaled + 
-                              (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) +
-                            (1 | word),
-                          data = data_no_out_outliers %>% filter(task == "P"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_P_NO_full)
-```
-
-```{r no-prod-rt-simple, include = FALSE}
-model_rt_P_NO_simple = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_cds_scaled +
-                              group * imageability_scaled*frequency_cds_scaled + 
-                              (1 | child_id) +
-                            (1 | word),
-                          data = data_no_out_outliers %>% filter(task == "P"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_P_NO_simple)
-```
-
-```{r echo = FALSE}
-table13 <- tidy(model_rt_P_NO_simple, effects = "fixed")
-kable(table13, digits = 3)
-```
-
-Norwegian Words is singular, so we simplify the model by removing random slopes.
-
-```{r no-prod-full-sup, include = FALSE}
-model_rt_P_NO_full_sup = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_scaled +
-                              group * imageability_scaled*frequency_scaled + 
-                              (1 + AoA_scaled + imageability_scaled + frequency_scaled | child_id) +
-                                (1 | word),
-                          data = data_no_out_outliers %>% filter(task == "P"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_P_NO_full_sup)
-```
-
-```{r no-prod-rt-simple-sup, include = FALSE}
-model_rt_P_NO_simple_sup = lmer(logRT ~ group*AoA_scaled + 
-                              group*imageability_scaled + 
-                              group*frequency_scaled +
-                              group * imageability_scaled*frequency_scaled + 
-                              (1 | child_id) +
-                                (1 | word),
-                          data = data_no_out_outliers %>% filter(task == "P"),
-                          control = lmerControl(optimizer = "bobyqa", 
-                                                optCtrl = list(maxfun = 2e5))
-)
-                       
-summary(model_rt_P_NO_simple_sup)
-```
-
-```{r echo = FALSE}
-table15 <- tidy(model_rt_P_NO_simple_sup, effects = "fixed")
-kable(table15, digits = 3)
-```
-
-In case of production RTs AIC and BIC are similar.
-
-```{r echo=FALSE}
-AIC(model_rt_P_NO_simple, model_rt_P_NO_simple_sup)
-BIC(model_rt_P_NO_simple, model_rt_P_NO_simple_sup)
-```
-
-
 ##  Age effects
-
-##  Polish comprehension
 
 ```{r}
 #scale and center age
 data_pl$Age_scaled <- scale(data_pl$Age, center = T, scale = T)
-
-model_acc_C_PL_simple_age = 
-  glmer(accuracy_strict ~ group*(AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-          Age_scaled*(AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-          (1 | child_id) + (1 | word),
-        data = data_pl %>% filter(task == "C"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_C_PL_simple_age)
+data_no$Age_scaled <- scale(data_no$Age, center = T, scale = T)
 ```
 
-##  Polish production
+I will try to run all models together (divided only into accuracy and RTs):
+
+1) Bind Polish and Norwegian data
+2) Run and view accuracy models
+3) Summarise the results
+
+```{r bind data}
+bind_rows(data_pl, data_no) %>%
+  mutate(group = if_else(group == "bi","bi","mono")) %>%
+  mutate(group = fct_relevel(group, "mono", "bi")) -> data_full
+```
+
+## Accuracy Models
+
+```{r accuracy-models}
+library(purrr)
+
+# Define fixed parts once
+rhs <- "~ group*(AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+          Age_scaled*(AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+          (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word) + imageability_scaled * frequency_cds_scaled"
+
+ctrl <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
+
+# Define what varies
+dvs   <- c("accuracy_strict")
+tasks <- c("P", "C")
+language <- c("POLISH", "NORWEGIAN")
+
+# Create all combinations
+combos <- expand.grid(dv = dvs, 
+                      language = language, 
+                      task = tasks, stringsAsFactors = FALSE)
+
+# Fit all models
+models <- pmap(combos, function(dv, language, task) {
+  glmer(
+    as.formula(paste(dv, rhs)),
+    data    = data_full %>% filter(language == !!language) %>% filter(task == !!task),
+    family  = binomial,
+    control = ctrl
+  )
+})
+
+# Name them clearly, e.g. "accuracy_strict.P", "accuracy_strict.C"
+names(models) <- paste(combos$dv, combos$language, combos$task, sep = ".")
+```
+
+Check convergence:
+No warnings.
+
+```{r convergence-checks}
+convergence_check <- map_dfr(models, function(m) {
+  # Safely extract gradient
+  derivs <- m@optinfo$derivs
+  max_grad <- if (!is.null(derivs) && !is.null(derivs$gradient)) {
+    max(abs(derivs$gradient))
+  } else {
+    NA_real_
+  }
+  
+  # Safely extract warnings
+  warns <- m@optinfo$conv$lme4$messages
+  warn_str <- if (!is.null(warns)) paste(warns, collapse = "; ") else ""
+  
+  tibble(
+    singular     = isSingular(m),
+    warnings     = warn_str
+  )
+}, .id = "model")
+
+convergence_check
+```
+
+### Polish Comprehension
 
 ```{r}
-model_acc_P_PL_simple_age = 
-  glmer(accuracy_strict ~ group*(AoA_scaled + 
-                                   imageability_scaled + frequency_cds_scaled) +
-          Age_scaled*(AoA_scaled + 
-                        imageability_scaled + 
-                        frequency_cds_scaled) +
-          (1 | child_id) + (1 | word),
-        data = data_pl %>% filter(task == "P"),
-        family = binomial,
-        control = glmerControl(optimizer = "bobyqa",
-                               optCtrl = list(maxfun= 2e5)))
-                       
-summary(model_acc_P_PL_simple_age)
+summary(models$accuracy_strict.POLISH.C)
+```
+
+### Polish Production
+
+```{r}
+summary(models$accuracy_strict.POLISH.P)
+```
+
+
+### Norwegian Comprehension
+
+```{r}
+summary(models$accuracy_strict.NORWEGIAN.C)
+```
+
+### Norwegian Production
+
+```{r}
+summary(models$accuracy_strict.NORWEGIAN.P)
+```
+
+##  RTs models
+
+```{r}
+#scale and center age
+data_pl_out_outliers$Age_scaled <- scale(data_pl_out_outliers$Age, center = T, scale = T)
+data_pl_out_outliers$Age_scaled <- scale(data_pl_out_outliers$Age, center = T, scale = T)
+```
+
+I will try to run all models together (divided only into accuracy and RTs):
+
+1) Bind Polish and Norwegian data
+2) Run and view accuracy models
+3) Summarise the results
+
+```{r bind data}
+bind_rows(data_pl_out_outliers, data_no_out_outliers) %>%
+  mutate(group = if_else(group == "bi","bi","mono")) %>%
+  mutate(group = fct_relevel(group, "mono", "bi")) -> data_full_out_outliers
+```
+
+```{r}
+library(purrr)
+
+# Define fixed parts once
+rhs <- "~ group*(AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+          Age_scaled*(AoA_scaled + imageability_scaled + frequency_cds_scaled) + 
+(1 | child_id) + (1 | word) + imageability_scaled * frequency_cds_scaled"
+
+ctrl <- lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
+
+# Define what varies
+dvs   <- c("logRT")
+tasks <- c("P", "C")
+language <- c("POLISH", "NORWEGIAN")
+
+# Create all combinations
+combos <- expand.grid(dv = dvs, 
+                      language = language, 
+                      task = tasks, stringsAsFactors = FALSE)
+
+# Fit all models
+models <- pmap(combos, function(dv, language, task) {
+  lmer(
+    as.formula(paste(dv, rhs)),
+    data    = data_full_out_outliers %>% 
+      filter(language == !!language) %>% filter(task == !!task),
+    control = ctrl
+  )
+})
+
+# Name them clearly, e.g. "accuracy_strict.P", "accuracy_strict.C"
+names(models) <- paste(combos$dv, combos$language, combos$task, sep = ".")
+```
+
+# Polish Comprehension
+
+```{r}
+summary(models_rt$logRT.POLISH.C)
+```
+
+# Polish Production
+
+```{r}
+summary(models_rt$logRT.POLISH.P)
+```
+
+# Norwegian Comprehension
+
+```{r}
+summary(models_rt$logRT.NORWEGIAN.C)
+```
+
+# Norwegian Production
+
+```{r}
+summary(models_rt$logRT.NORWEGIAN.P)
+```
+
+```{r}
+data_full_out_outliers %>%
+  filter(language == "NORWEGIAN", task == "P") %>%
+  summarise(across(
+    c(logRT, AoA_scaled, imageability_scaled,
+      frequency_cds_scaled, Age_scaled),
+    ~ sum(!is.na(.))
+  ))
+```
+
+#RT models classic
+
+PL COMP
+
+```{r}
+rt_pl_comp_age = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_cds_scaled +
+                              Age_scaled*AoA_scaled + 
+                              Age_scaled*imageability_scaled + 
+                              Age_scaled*frequency_cds_scaled +
+                              imageability_scaled*frequency_cds_scaled +
+                              (1 | child_id) + (1 | word),
+                          data = data_full_out_outliers %>% 
+                            filter(task == "C") %>% filter(language == "POLISH"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5)))
+
+summary(rt_pl_comp_age)
+```
+
+```{r}
+rt_pl_prod_age = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_cds_scaled +
+                              Age_scaled*AoA_scaled + 
+                              Age_scaled*imageability_scaled + 
+                              Age_scaled*frequency_cds_scaled +
+                              imageability_scaled*frequency_cds_scaled +
+                              (1 | child_id) + (1 | word),
+                          data = data_full_out_outliers %>% 
+                            filter(task == "P") %>% filter(language == "POLISH"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5)))
+
+summary(rt_pl_prod_age)
+```
+
+#NO
+
+```{r}
+rt_no_comp_age = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_cds_scaled +
+                              Age_scaled*AoA_scaled + 
+                              Age_scaled*imageability_scaled + 
+                              Age_scaled*frequency_cds_scaled +
+                              imageability_scaled*frequency_cds_scaled +
+                              (1 | child_id) + (1 | word),
+                          data = data_full_out_outliers %>% 
+                            filter(task == "C") %>% filter(language == "NORWEGIAN"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5)))
+
+summary(rt_no_comp_age)
+```
+
+```{r}
+rt_no__prod_age = lmer(logRT ~ group*AoA_scaled + 
+                              group*imageability_scaled + 
+                              group*frequency_cds_scaled +
+                              Age_scaled*AoA_scaled + 
+                              Age_scaled*imageability_scaled + 
+                              Age_scaled*frequency_cds_scaled +
+                              imageability_scaled*frequency_cds_scaled +
+                              (1 | child_id) + (1 | word),
+                          data = data_full_out_outliers %>% 
+                            filter(task == "P") %>% filter(language == "NORWEGIAN"),
+                          control = lmerControl(optimizer = "bobyqa", 
+                                                optCtrl = list(maxfun = 2e5)))
+
+summary(rt_no_prod_age)
+```
+
+# Exposure
+
+```{r}
+cor.test(data_no$Age, data_no$no_input_sum_percentage, method = "spearman")
+data_no %>% ggplot(aes(x = no_input_sum_percentage, y = Age)) +
+  geom_point()
+
+data_pl %>% ggplot(aes(x = pl_input_sum_percentage, y = Age)) +
+  geom_point()
+
+cor.test(data_pl$Age, data_no$pl_input_sum_percentage, method = "spearman")
 ```
 
