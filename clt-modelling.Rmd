@@ -413,28 +413,28 @@ lapply(models_rt_simpler, function(m) {
 })
 ```
 
-# Polish Comprehension
+### Polish Comprehension
 
 ```{r}
 summary(models_rt$polish_c_rt)
 ```
 
-# Polish Production
+### Polish Production
 
 ```{r}
 summary(models_rt$polish_p_rt)
 ```
 
-# Norwegian Comprehension
+### Norwegian Comprehension
 
 ```{r}
 summary(models_rt$norwegian_c_rt)
 ```
 
-# Norwegian Production
+### Norwegian Production
 
 ```{r}
 summary(models_rt$norwegian_p_rt)
 ```
 
-
+#
