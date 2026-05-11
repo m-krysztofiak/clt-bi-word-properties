@@ -17,6 +17,9 @@ library(lme4)
 library(broom.mixed) #for RMarkdown tables
 library(knitr) #for RMarkdown tables
 library(afex)
+library(gtsummary)
+library(flextable)
+library(officer)
 ```
 
 ```{r data, include=FALSE}
@@ -304,6 +307,17 @@ lapply(models_acc, function(m) {
 
 ```{r}
 summary(models_acc$polish_c_acc)
+
+library(gtsummary)
+library(flextable)
+library(officer)
+
+gt_table <- tbl_regression(models_acc$polish_c_acc)
+gt_table
+doc <- read_docx() %>%
+  body_add_flextable(as_flex_table(gt_table))
+
+print(doc, target = "glmer_summary.docx")
 ```
 
 ### Polish Production
@@ -323,6 +337,23 @@ summary(models_acc$norwegian_c_acc)
 ```{r}
 summary(models_acc$norwegian_p_acc)
 ```
+
+### Extract table
+
+```{r tables-accuracy-models}
+# Build a merged table
+merged_table <- tbl_merge(
+  tbls = lapply(models_acc, function(m) tbl_regression(m, exponentiate = TRUE)),
+  tab_spanner = names(models_acc)   # uses list names as column headers
+)
+
+# Export
+doc <- read_docx() |>
+  body_add_flextable(as_flex_table(merged_table))
+
+print(doc, target = "glmer_summary.docx")
+```
+
 
 ##  RTs models
 
@@ -416,26 +447,43 @@ lapply(models_rt_simpler, function(m) {
 ### Polish Comprehension
 
 ```{r}
-summary(models_rt$polish_c_rt)
+summary(models_rt_simpler$polish_c_rt)
 ```
 
 ### Polish Production
 
 ```{r}
-summary(models_rt$polish_p_rt)
+summary(models_rt_simpler$polish_p_rt)
 ```
 
 ### Norwegian Comprehension
 
 ```{r}
-summary(models_rt$norwegian_c_rt)
+summary(models_rt_simpler$norwegian_c_rt)
 ```
 
 ### Norwegian Production
 
 ```{r}
-summary(models_rt$norwegian_p_rt)
+summary(models_rt_simpler$norwegian_p_rt)
 ```
+
+### Export Tables
+
+```{r}
+# Build a merged table
+merged_table_rt <- tbl_merge(
+  tbls = lapply(models_rt_simpler, function(m) tbl_regression(m, exponentiate = TRUE)),
+  tab_spanner = names(models_rt_simpler)   # uses list names as column headers
+)
+
+# Export
+doc_rt <- read_docx() |>
+  body_add_flextable(as_flex_table(merged_table_rt))
+
+print(doc_rt, target = "lmer_summary.docx")
+```
+  
 
 # Exposure and Accuracy
 
@@ -514,7 +562,7 @@ summary(models_acc_exposure$norwegian_c_exposure)
 ```{r}
 summary(models_acc_exposure$norwegian_p_exposure)
 ``` 
-  
+
 # Exposure and RTs
 
 ```{r select-bi-no-outliers}
