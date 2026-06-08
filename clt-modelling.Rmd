@@ -580,6 +580,7 @@ summary(models_rt_exposure$norwegian_c_exposure)
 ```{r}
 summary(models_rt_exposure$norwegian_p_exposure)
 ``` 
+
 # Reliability analyses
 ## Accuracy
 ### Polish production
@@ -657,7 +658,8 @@ r_corr_PL_C <- (2 * r_PL_C) / (1 + r_PL_C)
 cat("Split-half reliability (Spearman-Brown corrected) for Polish Comprehension:", round(r_corr_PL_C, 2), "\n")
 ```
 
-### --- Norwegian production ----
+### Norwegian production
+
 ``` {r} 
 data_no_P <- subset(data_no, task == "P")
 
@@ -693,7 +695,8 @@ r_corr_NOR_P <- (2 * r_NOR_P) / (1 + r_NOR_P)
 cat("Split-half reliability (Spearman-Brown corrected) for Norwegian Production:", round(r_corr_NOR_P, 2), "\n")
 ```
 
-### --- Norwegian comprehension ----
+### Norwegian comprehension
+
 ``` {r}
 data_no_C <- subset(data_no, task == "C")
 
@@ -846,7 +849,8 @@ r_corr_NOR_C_RT <- (2 * r_NOR_C_RT) / (1 + r_NOR_C_RT)
 ``` {r}
 cat("Split-half reliability (Spearman-Brown corrected) for RTs in Norwegian Comprehension:", round(r_corr_NOR_C_RT, 2), "\n")
 ```
-# CORRELATIONS BETWEEN TASKS + ACCURACY VS REACTION TIMES
+
+# Correlations between tasks + accuracy and RTs
 ## Polish
 ``` {r}
 data_total_PL <- data_pl %>%
