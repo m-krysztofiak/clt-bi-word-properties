@@ -270,12 +270,10 @@ bind_rows(data_pl, data_no) %>%
 
 ```{r models-accuracy-all, echo = FALSE}
 formula_glmer <- accuracy_strict ~ 
+  Age_scaled +
   group * (AoA_scaled + 
              imageability_scaled + 
              frequency_cds_scaled) +
-  Age_scaled * (AoA_scaled + 
-                  imageability_scaled +
-                  frequency_cds_scaled) +
   imageability_scaled * frequency_cds_scaled +
   (1 + AoA_scaled + 
      imageability_scaled + 
@@ -337,7 +335,7 @@ summary(models_acc$norwegian_p_acc)
 
 ### Extract table
 
-```{r tables-accuracy-models, include = FALSE}
+```{r tables-accuracy-models, eval = FALSE}
 # Build a merged table
 merged_table <- tbl_merge(
   tbls = lapply(models_acc, function(m) tbl_regression(m, exponentiate = TRUE)),
@@ -345,75 +343,10 @@ merged_table <- tbl_merge(
 )
 
 # Export
-#doc <- read_docx() |>
-  #body_add_flextable(as_flex_table(merged_table))
+doc <- read_docx() %>%
+  body_add_flextable(as_flex_table(merged_table))
 
-#print(doc, target = "glmer_summary.docx")
-```
-
-### Power analysis
-
-EFs from the previous literature
-group*AoA_scaled: ns (Łuniewska et al., 2022)
-group*imageability_scaled: ns (Łuniewska et al., 2022)
-group*frequency_cds_scaled: exp(-.20) = 0.82 (Łuniewska et al., 2022)
-Age_scaled*AoA_scaled: ?
-Age_scaled*imageability_scaled: ns in Coffey
-Age_scaled*frequency_cds_scaled: 1.06 (Coffey et al., 2024); exp(0.82) = 1.22
-imageability_scaled*frequency_cds_scaled: 1.36 (Coffey et al., 2024)
-
-We focused on the effects established in the literature.
-
-EFs from Łuniewska et al. (2022); the most relavant in terms of the task and 
-children's age range; other effects from Coffey et al. (2024) 
-data for imageability specifically and for interaction between imageability and frequency.
-
-Focus on production - data in Coffey available for producion, 
-more variability in production data.
-
-```{r effects-previous-lit}
-"effect_group_frequency" = -0.20 #Łuniewska et al. (2022)
-"effect_Age_imageability" = 1.06 #Coffey et al. (2024)
-"effect_imageability_frequency" = 0.38 #Coffey et al. (2024)
-```
-
-_"Power analyses were conducted using the structure of the fitted model (random effects, data structure) as the basis for simulation, with fixed effects replaced by estimates from prior literature. In the absence of pilot data, random effect variance components were taken from the present sample, which introduces uncertainty into the power estimates. Results should therefore be interpreted as approximations conditional on the observed variance structure rather than precise a priori power calculations."_ (from Claude)
-
-### Group interaction
-
-```{r}
-model_power <- glmer(accuracy_strict ~ 
-                       group * (AoA_scaled + 
-                                  imageability_scaled + 
-                                  frequency_cds_scaled) + 
-                       (1 | child_id) +
-                       (1 | word),
-                            data = data_full %>% filter(language == "POLISH" & task == "P"),
-                            family = binomial,
-                            control = glmerControl(optimizer = "bobyqa", 
-                                                   optCtrl = list(maxfun = 2e5)))
-summary(model_power)
-```
-
-Power analysis frequency
-
-```{r pa-frequency}
-# Use the literature-derived effect, with sign matching your hypothesis
-fixef(model_power)["groupbi:frequency_cds_scaled"] <- effect_group_frequency
-
-#power analysis
-pwr_analysis_group_frequency <- powerSim(model_power, 
-         test = fixed("groupbi:frequency_cds_scaled", method = "z"),
-         nsim = 500)
-pwr_analysis_group_frequency
-beepr::beep(sound = 1)
-
-#extend sample size
-model_power2 <- extend(model_power, along="child_id", n=150)
-pwr_analysis_group_frequency2 <- powerSim(model_power2, 
-         test = fixed("groupbi:frequency_cds_scaled", method = "z"),
-         nsim = 500)
- pwr_analysis_group_frequency2
+print(doc, target = "glmer_summary.docx")
 ```
 
 ##  RTs models
@@ -437,8 +370,8 @@ bind_rows(data_pl_out_outliers, data_no_out_outliers) %>%
 First more complex with random slopes:
 
 ```{r models-rts-all}
-formula_lmer <- logRT ~ group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-                        Age_scaled * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+formula_lmer <- logRT ~ Age_scaled + 
+  group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
                         imageability_scaled * frequency_cds_scaled +
                         (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + 
   (1 | word)
@@ -474,10 +407,10 @@ lapply(models_rt, function(m) {
 We proceed with simpler models (no random slopes)
 
 ```{r models-rts-all-simple}
-formula_lmer_simpler <- logRT ~ group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-                        Age_scaled * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-                        imageability_scaled * frequency_cds_scaled +
-                        (1 | child_id) + (1 | word)
+formula_lmer_simpler <- logRT ~ Age_scaled + 
+  group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+  imageability_scaled * frequency_cds_scaled +
+  (1 | child_id) + (1 | word)
 
 ctrl <- lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
 
@@ -531,7 +464,7 @@ summary(models_rt_simpler$norwegian_p_rt)
 
 ### Export Tables
 
-```{r}
+```{r tables-rts-models, eval = FALSE}
 # Build a merged table
 merged_table_rt <- tbl_merge(
   tbls = lapply(models_rt_simpler, function(m) tbl_regression(m, exponentiate = TRUE)),
@@ -690,3 +623,67 @@ summary(models_rt_exposure$norwegian_c_exposure)
 summary(models_rt_exposure$norwegian_p_exposure)
 ``` 
   
+### Power analysis
+
+EFs from the previous literature
+group*AoA_scaled: ns (Łuniewska et al., 2022)
+group*imageability_scaled: ns (Łuniewska et al., 2022)
+group*frequency_cds_scaled: exp(-.20) = 0.82 (Łuniewska et al., 2022)
+Age_scaled*AoA_scaled: ?
+Age_scaled*imageability_scaled: ns in Coffey
+Age_scaled*frequency_cds_scaled: 1.06 (Coffey et al., 2024); exp(0.82) = 1.22
+imageability_scaled*frequency_cds_scaled: 1.36 (Coffey et al., 2024)
+
+We focused on the effects established in the literature.
+
+EFs from Łuniewska et al. (2022); the most relavant in terms of the task and 
+children's age range; other effects from Coffey et al. (2024) 
+data for imageability specifically and for interaction between imageability and frequency.
+
+Focus on production - data in Coffey available for producion, 
+more variability in production data.
+
+```{r effects-previous-lit}
+"effect_group_frequency" = -0.20 #Łuniewska et al. (2022)
+"effect_Age_imageability" = 1.06 #Coffey et al. (2024)
+"effect_imageability_frequency" = 0.38 #Coffey et al. (2024)
+```
+
+_"Power analyses were conducted using the structure of the fitted model (random effects, data structure) as the basis for simulation, with fixed effects replaced by estimates from prior literature. In the absence of pilot data, random effect variance components were taken from the present sample, which introduces uncertainty into the power estimates. Results should therefore be interpreted as approximations conditional on the observed variance structure rather than precise a priori power calculations."_ (from Claude)
+
+### Group interaction
+
+```{r}
+model_power <- glmer(accuracy_strict ~ 
+                       group * (AoA_scaled + 
+                                  imageability_scaled + 
+                                  frequency_cds_scaled) + 
+                       (1 | child_id) +
+                       (1 | word),
+                            data = data_full %>% filter(language == "POLISH" & task == "P"),
+                            family = binomial,
+                            control = glmerControl(optimizer = "bobyqa", 
+                                                   optCtrl = list(maxfun = 2e5)))
+summary(model_power)
+```
+
+Power analysis frequency
+
+```{r pa-frequency}
+# Use the literature-derived effect, with sign matching your hypothesis
+fixef(model_power)["groupbi:frequency_cds_scaled"] <- effect_group_frequency
+
+#power analysis
+pwr_analysis_group_frequency <- powerSim(model_power, 
+         test = fixed("groupbi:frequency_cds_scaled", method = "z"),
+         nsim = 500)
+pwr_analysis_group_frequency
+beepr::beep(sound = 1)
+
+#extend sample size
+model_power2 <- extend(model_power, along="child_id", n=150)
+pwr_analysis_group_frequency2 <- powerSim(model_power2, 
+         test = fixed("groupbi:frequency_cds_scaled", method = "z"),
+         nsim = 500)
+ pwr_analysis_group_frequency2
+```
