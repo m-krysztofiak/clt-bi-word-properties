@@ -208,44 +208,34 @@ data_no$group <-relevel(factor(data_no$group), ref="monoNO")
 ### Polish
 
 ```{r include = FALSE}
-df_num <- data_pl %>%
-  distinct(word, frequency_cds_scaled, frequency_scaled, Imageability, AoA) %>%
+df_num_pl <- data_pl %>%
+  distinct(word, frequency_cds, Imageability, AoA) %>%
   select(-word)
-cor_res <- rcorr(as.matrix(df_num), type = "spearman")
+cor_res <- rcorr(as.matrix(df_num_pl), type = "spearman")
 cor_res
 # correlation matrix
 cor_res$r
 # p-values
-cor_res$n - 2
+cor_res$P
 #degrees of freedom
-```
-
-```{r echo = FALSE}
-library(corrplot)
-corrplot(cor_res$r,
-         p.mat = cor_res$P,
-         sig.level = 0.05,
-         method = "circle",
-         type = "upper",
-         tl.col = "black",
-         diag = FALSE,
-         insig = "blank")
-```
-
-Lack of correlation between frequency is suprising...
-
-```{r echo = FALSE}
-df_num %>% 
-  ggplot(aes(x = frequency_scaled, y = frequency_cds_scaled)) +
-  geom_point(color = "lightpink", alpha = .8) +
-  theme_classic() +
-  labs(x = "SUBTLEX",
-       y = "CDS")
+cor_res$n - 2
 ```
 
 ### Norwegian
 
-
+```{r include = FALSE}
+df_num_no <- data_no %>%
+  distinct(word, frequency_cds, Imageability, AoA) %>%
+  select(-word)
+cor_res_no <- rcorr(as.matrix(df_num_no), type = "spearman")
+cor_res_no
+# correlation matrix
+cor_res_no$r
+# p-values
+cor_res_no$P
+#degrees of freedom
+cor_res_no$n - 2
+```
 
 ## Accuracy Models
 
