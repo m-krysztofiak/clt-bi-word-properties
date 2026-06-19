@@ -13,6 +13,7 @@ options(scipen = 999) #removes scietific notation
 
 ```{r libraries, include=FALSE}
 library(tidyverse)
+library(Hmisc)
 library(lme4)
 library(broom.mixed) #for RMarkdown tables
 library(knitr) #for RMarkdown tables
@@ -204,21 +205,19 @@ data_no$group <-relevel(factor(data_no$group), ref="monoNO")
 
 ## Correlations between word properties
 
+### Polish
+
 ```{r include = FALSE}
 df_num <- data_pl %>%
   distinct(word, frequency_cds_scaled, frequency_scaled, Imageability, AoA) %>%
   select(-word)
-
-cor_mat_spearman <- cor(df_num,
-                        method = "spearman",
-                        use = "complete.obs")
-
-library(Hmisc)
 cor_res <- rcorr(as.matrix(df_num), type = "spearman")
+cor_res
 # correlation matrix
 cor_res$r
 # p-values
-cor_res$P
+cor_res$n - 2
+#degrees of freedom
 ```
 
 ```{r echo = FALSE}
@@ -243,6 +242,10 @@ df_num %>%
   labs(x = "SUBTLEX",
        y = "CDS")
 ```
+
+### Norwegian
+
+
 
 ## Accuracy Models
 
