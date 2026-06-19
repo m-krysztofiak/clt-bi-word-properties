@@ -48,7 +48,7 @@ data_pl_filtered <- data_pl %>%
   filter(reaction_time>=1000) %>%
   filter(complete.cases(frequency_cds, Imageability, AoA))
 length(data_pl_filtered$reaction_time) 
-#there are 11236 measured reaction times for correct responses and complete cases, 
+#there are 11173 measured reaction times for correct responses and complete cases, 
 #RTs>=1000 ms
 
 mean_RT_PL <- data_pl_filtered %>%
@@ -176,13 +176,13 @@ ln(x+1) (bc there are same frequencies = 0)
 data_no_out_outliers <- data_no_out_outliers %>%
   mutate(
     frequency_cds_scaled = scale(log(frequency_cds+1),
-                                 center = TRUE, scale = TRUE),
+                                 center = T, scale = T),
     frequency_scaled = scale(log(Frequency), 
-                             center = TRUE, scale = TRUE),
+                             center = T, scale = T),
     imageability_scaled = scale(Imageability, 
-                                center = TRUE, scale = TRUE),
+                                center = T, scale = T),
     AoA_scaled = scale(AoA, 
-                       center = TRUE, scale = TRUE),
+                       center = T, scale = T),
     logRT=log(reaction_time))
 
 data_no_out_outliers$group <-relevel(factor(data_no_out_outliers$group), ref="monoNO")
@@ -191,13 +191,13 @@ data_no_out_outliers$group <-relevel(factor(data_no_out_outliers$group), ref="mo
 data_no <- data_no %>%
   mutate(
     frequency_cds_scaled = scale(log(frequency_cds+1),
-                                 center = TRUE, scale = TRUE),
+                                 center = T, scale = T),
     frequency_scaled = scale(log(Frequency + 1), 
-                             center = TRUE, scale = TRUE),
-    imageability_scaled = scale(Imageability, center = TRUE, 
-                                scale = TRUE),
+                             center = T, scale = T),
+    imageability_scaled = scale(Imageability, center = T, 
+                                scale = T),
     AoA_scaled = scale(AoA, 
-                       center = TRUE, scale = TRUE))
+                       center = T, scale = T))
 
 data_no$group <-relevel(factor(data_no$group), ref="monoNO")
 ```
@@ -623,67 +623,213 @@ summary(models_rt_exposure$norwegian_c_exposure)
 summary(models_rt_exposure$norwegian_p_exposure)
 ``` 
   
-### Power analysis
+# Power analysis
 
-EFs from the previous literature
-group*AoA_scaled: ns (Łuniewska et al., 2022)
-group*imageability_scaled: ns (Łuniewska et al., 2022)
-group*frequency_cds_scaled: exp(-.20) = 0.82 (Łuniewska et al., 2022)
-Age_scaled*AoA_scaled: ?
-Age_scaled*imageability_scaled: ns in Coffey
-Age_scaled*frequency_cds_scaled: 1.06 (Coffey et al., 2024); exp(0.82) = 1.22
-imageability_scaled*frequency_cds_scaled: 1.36 (Coffey et al., 2024)
+## Accuracy
 
-We focused on the effects established in the literature.
+We conduct analyses on a simpler model - without random slopes -
+more similar to the one in Łuniewska et al. (2022).
 
-EFs from Łuniewska et al. (2022); the most relavant in terms of the task and 
-children's age range; other effects from Coffey et al. (2024) 
-data for imageability specifically and for interaction between imageability and frequency.
+Some effects were reveresed since in Łuniewska et al. (2022)
+baseline for group was "bilingual"
 
-Focus on production - data in Coffey available for producion, 
-more variability in production data.
-
-```{r effects-previous-lit}
-"effect_group_frequency" = -0.20 #Łuniewska et al. (2022)
-"effect_Age_imageability" = 1.06 #Coffey et al. (2024)
-"effect_imageability_frequency" = 0.38 #Coffey et al. (2024)
-```
-
-_"Power analyses were conducted using the structure of the fitted model (random effects, data structure) as the basis for simulation, with fixed effects replaced by estimates from prior literature. In the absence of pilot data, random effect variance components were taken from the present sample, which introduces uncertainty into the power estimates. Results should therefore be interpreted as approximations conditional on the observed variance structure rather than precise a priori power calculations."_ (from Claude)
-
-### Group interaction
-
-```{r}
-model_power <- glmer(accuracy_strict ~ 
+```{r acc-model-power}
+acc_model_power <- glmer(accuracy_strict ~ 
                        group * (AoA_scaled + 
                                   imageability_scaled + 
                                   frequency_cds_scaled) + 
+                         imageability_scaled*frequency_cds_scaled +
                        (1 | child_id) +
                        (1 | word),
                             data = data_full %>% filter(language == "POLISH" & task == "P"),
                             family = binomial,
                             control = glmerControl(optimizer = "bobyqa", 
                                                    optCtrl = list(maxfun = 2e5)))
-summary(model_power)
+summary(acc_model_power)
 ```
 
-Power analysis frequency
+```{r effects-acc}
+#two separate vectors bc group is "group" in the model and "groupbi" in the results
+lit_effects_acc <- list(
+  fixef_name  = c("groupbi",                     
+                  "AoA_scaled",      
+                  "imageability_scaled",   
+                  "frequency_cds_scaled",   
+                  "groupbi:frequency_cds_scaled"),
+  test_name   = c("group",                        
+                  "AoA_scaled",      
+                  "imageability_scaled",   
+                  "frequency_cds_scaled",   
+                  "group:frequency_cds_scaled"),
+  effect_size = c(-0.66, #reversed                        
+                  -1.02,            
+                  0.73,                 
+                  0.38,                  
+                  0.20) #reversed
+)
 
-```{r pa-frequency}
+pwr_results_acc <- list()
+
+for (i in seq_along(lit_effects_acc$fixef_name)) {
+  
+  fixef_name  <- lit_effects_acc$fixef_name[i]
+  test_name   <- lit_effects_acc$test_name[i]
+  effect_size <- lit_effects_acc$effect_size[i]
+  
+  cat("\n>>> Running power simulation for:", fixef_name, "\n")
+  
+  model_tmp <- model_power_acc
+  
+  if (!fixef_name %in% names(fixef(model_tmp))) {
+    warning("Coefficient not found: ", fixef_name, " — skipping.")
+    next
+  }
+  
+  fixef(model_tmp)[fixef_name] <- effect_size
+  
+  pwr_results_acc[[fixef_name]] <- powerSim(
+    model_tmp,
+    test = fixed(fixef_name, method = "z"),
+    nsim = 500,
+    seed = 42
+  )
+  
+  print(pwr_results_acc[[fixef_name]])
+}
+
+beepr::beep(sound = 1)
+```
+
+### Power analysis frequency x imageability
+
+```{r pa-freq-im}
 # Use the literature-derived effect, with sign matching your hypothesis
-fixef(model_power)["groupbi:frequency_cds_scaled"] <- effect_group_frequency
+fixef(acc_model_power)["imageability_scaled:frequency_cds_scaled"] <- acc_effect_imageability_frequency
 
 #power analysis
-pwr_analysis_group_frequency <- powerSim(model_power, 
-         test = fixed("groupbi:frequency_cds_scaled", method = "z"),
+pwr_analysis_freq_im <- powerSim(acc_model_power, 
+         test = fixed("imageability_scaled:frequency_cds_scaled", method = "z"),
          nsim = 500)
-pwr_analysis_group_frequency
+pwr_analysis_freq_im
 beepr::beep(sound = 1)
-
-#extend sample size
-model_power2 <- extend(model_power, along="child_id", n=150)
-pwr_analysis_group_frequency2 <- powerSim(model_power2, 
-         test = fixed("groupbi:frequency_cds_scaled", method = "z"),
-         nsim = 500)
- pwr_analysis_group_frequency2
 ```
+
+## RTs
+
+```{r rt-power-model}
+#model
+#with raw RTs to match the ones in Łuniewska et al.
+model_power_rt <- lme4::lmer(reaction_time ~ 
+                       group * (AoA_scaled + 
+                                  imageability_scaled + 
+                                  frequency_cds_scaled) + 
+                       (1 | child_id) +
+                       (1 | word),
+                            data = data_full_out_outliers %>% filter(language == "POLISH" & task == "P"),
+                            control = lmerControl(optimizer = "bobyqa", 
+                                                   optCtrl = list(maxfun = 2e5)))
+summary(model_power_rt)
+fixef(model_power_rt)
+```
+
+```{r effects-rts}
+#two separate vectors bc group is "group" in the model and "groupbi" in the results
+lit_effects_rts <- list(
+  fixef_name  = c("groupbi",                     
+                  "AoA_scaled",      
+                  "imageability_scaled",   
+                  "frequency_cds_scaled",   
+                  "groupbi:imageability_scaled",   
+                  "groupbi:frequency_cds_scaled"),
+  test_name   = c("group",                        
+                  "AoA_scaled",      
+                  "imageability_scaled",   
+                  "frequency_cds_scaled",   
+                  "group:imageability_scaled",      
+                  "group:frequency_cds_scaled"),
+  effect_size = c(385.44,                         
+                  270.16,            
+                  -256.32,                 
+                  -189.82,                  
+                  -219.02,                          
+                  134.81)
+)
+
+pwr_results_rt <- list()
+
+for (i in seq_along(lit_effects_rts$fixef_name)) {
+  
+  fixef_name  <- lit_effects_rts$fixef_name[i]
+  test_name   <- lit_effects_rts$test_name[i]
+  effect_size <- lit_effects_rts$effect_size[i]
+  
+  cat("\n>>> Running power simulation for:", fixef_name, "\n")
+  
+  model_tmp <- model_power_rt
+  
+  if (!fixef_name %in% names(fixef(model_tmp))) {
+    warning("Coefficient not found: ", fixef_name, " — skipping.")
+    next
+  }
+  
+  fixef(model_tmp)[fixef_name] <- effect_size
+  
+  pwr_results_rt[[fixef_name]] <- powerSim(
+    model_tmp,
+    test = fixed(fixef_name, method = "t"),
+    nsim = 500,
+    seed = 42
+  )
+  
+  print(pwr_results_rt[[fixef_name]])
+}
+
+beepr::beep(sound = 1)
+```
+
+# Post-Hoc Power Sensitivity Analysis using the SESOI
+
+[link](https://thechangelab.stanford.edu/tutorials/power-analysis/post-hoc-power-sensitivity-analysis-using-the-sesoi/)
+
+```{r}
+model_power_rt <- lme4::lmer(logRT ~ 
+                       group * (AoA_scaled + 
+                                  imageability_scaled + 
+                                  frequency_cds_scaled) + 
+                       (1 | child_id) +
+                       (1 | word),
+                            data = data_full_out_outliers %>% 
+                         filter(language == "POLISH" & task == "P"),
+                            control = lmerControl(optimizer = "bobyqa", 
+                                                   optCtrl = list(maxfun = 2e5)))
+summary(model_power_rt)
+#Power for the effect of interest
+sim_power_fixed <- simr::powerSim(model_power_rt,
+                                  test = fixed("groupbi", method = "z"),
+                                  seed = 1234,
+                                  nsim = 500)
+sim_power_fixed
+
+SESOI <- 1.0 #setting the smallest effect size to test
+SESOI_Power <- 0.04 #current power
+
+#repeat until the power reaches 80%
+while (SESOI_Power < 0.8){
+  #update the effect size
+  SESOI <- SESOI + 0.05 #increase by 0.1
+  fixef(model_power_rt)["groupbi"] <- SESOI
+  
+  #Power for the effect of interest
+  SimPower_Fixed <- simr::powerSim(model_power_rt,
+                                   test=simr::fixed("groupbi", method="z"),
+                                   seed=1234, #set for replication
+                                   nsim=100, #set low for time or high for real
+                                   alpha=.05, progress=FALSE) #options
+
+  #examine post-hoc power
+  SESOI_Power <- summary(SimPower_Fixed)$mean #save the power estimate
+  cat(SESOI,"with power",SESOI_Power,"\n")
+}
+SESOI
+```
+
