@@ -2,8 +2,8 @@
 title: "BLC CLT and Word Properties"
 date: "2026-04-01"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -615,6 +615,377 @@ summary(models_rt_exposure$norwegian_c_exposure)
 ```{r}
 summary(models_rt_exposure$norwegian_p_exposure)
 ``` 
+
+# Reliability analyses
+## Accuracy
+### Polish production
+
+```{r}
+data_pl_P <- subset(data_pl, task == "P")
+
+data_wide_PL_P <- data_pl_P %>%
+  select(child_id, word, accuracy_strict) %>%
+  pivot_wider(names_from = word, values_from = accuracy_strict)
+
+data_for_alpha_PL_P <- data_wide_PL_P[, -1]
+
+alpha_PL_P <- psych::alpha(data_for_alpha_PL_P, check.keys = FALSE)
+
+print(alpha_PL_P$total$raw_alpha)
+``` 
+
+``` {r}
+cat("Cronbach's alpha for Polish Production:", round(alpha_PL_P$total$raw_alpha,2), "\n")
+```
+
+``` {r}
+items_PL_P <- colnames(data_for_alpha_PL_P)
+half1_PL_P <- sample(items_PL_P, length(items_PL_P)/2)
+half2_PL_P <- setdiff(items_PL_P, half1_PL_P)
+
+score_half1_PL_P <- rowSums(data_for_alpha_PL_P[, half1_PL_P], na.rm = TRUE)
+score_half2_PL_P  <- rowSums(data_for_alpha_PL_P[, half2_PL_P], na.rm = TRUE)
+
+r_PL_P <- cor(score_half1_PL_P, score_half2_PL_P, use = "pairwise.complete.obs")
+
+r_corr_PL_P <- (2 * r_PL_P) / (1 + r_PL_P)
+```
+
+``` {r}
+cat("Split-half reliability (Spearman-Brown corrected) for Polish Production:", round(r_corr_PL_P, 2), "\n")
+```
+
+### Polish comprehension
+``` {r} 
+data_pl_C <- subset(data_pl, task == "C")
+
+data_wide_PL_C <- data_pl_C %>%
+  select(child_id, word, accuracy_strict) %>%
+  pivot_wider(names_from = word, values_from = accuracy_strict)
+
+data_for_alpha_PL_C <- data_wide_PL_C[, -1]
+```
+
+```{r}
+alpha_PL_C <- psych::alpha(data_for_alpha_PL_C, check.keys = FALSE)
+
+print(alpha_PL_C$total$raw_alpha)
+```
+
+```{r}
+cat("Cronbach's alpha for Polish Comprehension:", round(alpha_PL_C$total$raw_alpha,2), "\n")
+```
+
+``` {r}
+items_PL_C <- colnames(data_for_alpha_PL_C)
+half1_PL_C <- sample(items_PL_C, length(items_PL_C)/2)
+half2_PL_C <- setdiff(items_PL_C, half1_PL_C)
+
+score_half1_PL_C <- rowSums(data_for_alpha_PL_C[, half1_PL_C], na.rm = TRUE)
+score_half2_PL_C  <- rowSums(data_for_alpha_PL_C[, half2_PL_C], na.rm = TRUE)
+
+r_PL_C <- cor(score_half1_PL_C, score_half2_PL_C, use = "pairwise.complete.obs")
+
+r_corr_PL_C <- (2 * r_PL_C) / (1 + r_PL_C)
+```
+
+``` {r}
+cat("Split-half reliability (Spearman-Brown corrected) for Polish Comprehension:", round(r_corr_PL_C, 2), "\n")
+```
+
+### Norwegian production
+
+``` {r} 
+data_no_P <- subset(data_no, task == "P")
+
+data_wide_NOR_P <- data_no_P %>%
+  select(child_id, word, accuracy_strict) %>%
+  pivot_wider(names_from = word, values_from = accuracy_strict)
+
+data_for_alpha_NOR_P <- data_wide_NOR_P[, -1]
+
+alpha_NOR_P <- psych::alpha(data_for_alpha_NOR_P, check.keys = FALSE)
+
+print(alpha_NOR_P$total$raw_alpha)
+```
+
+``` {r}
+cat("Cronbach's alpha for Norwegian Production:", round(alpha_NOR_P$total$raw_alpha,2), "\n")
+```
+
+``` {r}
+items_NOR_P <- colnames(data_for_alpha_NOR_P)
+half1_NOR_P <- sample(items_NOR_P, length(items_NOR_P)/2)
+half2_NOR_P <- setdiff(items_NOR_P, half1_NOR_P)
+
+score_half1_NOR_P <- rowSums(data_for_alpha_NOR_P[, half1_NOR_P], na.rm = TRUE)
+score_half2_NOR_P  <- rowSums(data_for_alpha_NOR_P[, half2_NOR_P], na.rm = TRUE)
+
+r_NOR_P <- cor(score_half1_NOR_P, score_half2_NOR_P, use = "pairwise.complete.obs")
+
+r_corr_NOR_P <- (2 * r_NOR_P) / (1 + r_NOR_P)
+```
+
+``` {r}
+cat("Split-half reliability (Spearman-Brown corrected) for Norwegian Production:", round(r_corr_NOR_P, 2), "\n")
+```
+
+### Norwegian comprehension
+
+``` {r}
+data_no_C <- subset(data_no, task == "C")
+
+data_wide_NOR_C <- data_no_C %>%
+  select(child_id, word, accuracy_strict) %>%
+  pivot_wider(names_from = word, values_from = accuracy_strict)
+
+data_for_alpha_NOR_C <- data_wide_NOR_C[, -1]
+
+alpha_NOR_C <- psych::alpha(data_for_alpha_NOR_C, check.keys = FALSE)
+
+print(alpha_NOR_C$total$raw_alpha)
+```
+
+``` {r}
+cat("Cronbach's alpha for Norwegian Comprehension:", round(alpha_NOR_C$total$raw_alpha,2), "\n")
+```
+
+``` {r}
+items_NOR_C <- colnames(data_for_alpha_NOR_C)
+half1_NOR_C <- sample(items_NOR_C, length(items_NOR_C)/2)
+half2_NOR_C <- setdiff(items_NOR_C, half1_NOR_C)
+
+score_half1_NOR_C <- rowSums(data_for_alpha_NOR_C[, half1_NOR_C], na.rm = TRUE)
+score_half2_NOR_C  <- rowSums(data_for_alpha_NOR_C[, half2_NOR_C], na.rm = TRUE)
+
+r_NOR_C <- cor(score_half1_NOR_C, score_half2_NOR_C, use = "pairwise.complete.obs")
+
+r_corr_NOR_C <- (2 * r_NOR_C) / (1 + r_NOR_C)
+```
+
+``` {r}
+cat("Split-half reliability (Spearman-Brown corrected) for Norwegian Comprehension:", round(r_corr_NOR_C, 2), "\n")
+```
+
+## Reaction times
+### Polish comprehension RTs
+
+``` {r}
+data_PL_C_RT <- subset(data_pl_out_outliers, task == "C")
+
+data_wide_PL_C_RT <- data_PL_C_RT %>%
+  select(child_id, word, logRT) %>%
+  pivot_wider(names_from = word, values_from = logRT)
+
+data_for_sh_PL_C_RT <- data_wide_PL_C_RT[, -1]
+```
+
+``` {r}
+items_PL_C_RT <- colnames(data_for_sh_PL_C_RT)
+half1_PL_C_RT <- sample(items_PL_C_RT, length(items_PL_C_RT)/2)
+half2_PL_C_RT <- setdiff(items_PL_C_RT, half1_PL_C_RT)
+
+score_half1_PL_C_RT <- rowSums(data_for_sh_PL_C_RT[, half1_PL_C_RT], na.rm = TRUE)
+score_half2_PL_C_RT  <- rowSums(data_for_sh_PL_C_RT[, half2_PL_C_RT], na.rm = TRUE)
+
+r_PL_C_RT <- cor(score_half1_PL_C_RT, score_half2_PL_C_RT, use = "pairwise.complete.obs")
+
+r_corr_PL_C_RT <- (2 * r_PL_C_RT) / (1 + r_PL_C_RT)
+```
+
+``` {r}
+cat("Split-half reliability (Spearman-Brown corrected) for RTs in Polish Comprehension:", round(r_corr_PL_C_RT, 2), "\n")
+```
+
+### Polish production RTs
+
+``` {r}
+data_PL_P_RT <- subset(data_pl_out_outliers, task == "P")
+
+data_wide_PL_P_RT <- data_PL_P_RT %>%
+  select(child_id, word, logRT) %>%
+  pivot_wider(names_from = word, values_from = logRT)
+
+data_for_sh_PL_P_RT <- data_wide_PL_P_RT[, -1]
+```
+
+``` {r}
+items_PL_P_RT <- colnames(data_for_sh_PL_P_RT)
+half1_PL_P_RT <- sample(items_PL_P_RT, length(items_PL_P_RT)/2)
+half2_PL_P_RT <- setdiff(items_PL_P_RT, half1_PL_P_RT)
+
+score_half1_PL_P_RT <- rowSums(data_for_sh_PL_P_RT[, half1_PL_P_RT], na.rm = TRUE)
+score_half2_PL_P_RT  <- rowSums(data_for_sh_PL_P_RT[, half2_PL_P_RT], na.rm = TRUE)
+
+r_PL_P_RT <- cor(score_half1_PL_P_RT, score_half2_PL_P_RT, use = "pairwise.complete.obs")
+
+r_corr_PL_P_RT <- (2 * r_PL_P_RT) / (1 + r_PL_P_RT)
+```
+
+``` {r}
+cat("Split-half reliability (Spearman-Brown corrected) for RTs in Polish Production:", round(r_corr_PL_P_RT, 2), "\n")
+```
+
+### Norwegian production RTs
+
+``` {r}
+data_NOR_P_RT <- subset(data_no_out_outliers, task == "P")
+
+data_wide_NOR_P_RT <- data_NOR_P_RT %>%
+  select(child_id, word, logRT) %>%
+  pivot_wider(names_from = word, values_from = logRT)
+
+data_for_sh_NOR_P_RT <- data_wide_NOR_P_RT[, -1]
+```
+
+``` {r}
+items_NOR_P_RT <- colnames(data_for_sh_NOR_P_RT)
+half1_NOR_P_RT <- sample(items_NOR_P_RT, length(items_NOR_P_RT)/2)
+half2_NOR_P_RT <- setdiff(items_NOR_P_RT, half1_NOR_P_RT)
+
+score_half1_NOR_P_RT <- rowSums(data_for_sh_NOR_P_RT[, half1_NOR_P_RT], na.rm = TRUE)
+score_half2_NOR_P_RT  <- rowSums(data_for_sh_NOR_P_RT[, half2_NOR_P_RT], na.rm = TRUE)
+
+r_NOR_P_RT <- cor(score_half1_NOR_P_RT, score_half2_NOR_P_RT, use = "pairwise.complete.obs")
+
+r_corr_NOR_P_RT <- (2 * r_NOR_P_RT) / (1 + r_NOR_P_RT)
+```
+
+``` {r}
+cat("Split-half reliability (Spearman-Brown corrected) for RTs in Norwegian Production:", round(r_corr_NOR_P_RT, 2), "\n")
+```
+
+### Norwegian comprehension RTs
+
+``` {r}
+data_NOR_C_RT <- subset(data_no_out_outliers, task == "C")
+
+data_wide_NOR_C_RT <- data_NOR_C_RT %>%
+  select(child_id, word, logRT) %>%
+  pivot_wider(names_from = word, values_from = logRT)
+
+data_for_sh_NOR_C_RT <- data_wide_NOR_C_RT[, -1]
+```
+
+
+``` {r}
+items_NOR_C_RT <- colnames(data_for_sh_NOR_C_RT)
+half1_NOR_C_RT <- sample(items_NOR_C_RT, length(items_NOR_C_RT)/2)
+half2_NOR_C_RT <- setdiff(items_NOR_C_RT, half1_NOR_C_RT)
+
+score_half1_NOR_C_RT <- rowSums(data_for_sh_NOR_C_RT[, half1_NOR_C_RT], na.rm = TRUE)
+score_half2_NOR_C_RT  <- rowSums(data_for_sh_NOR_C_RT[, half2_NOR_C_RT], na.rm = TRUE)
+
+r_NOR_C_RT <- cor(score_half1_NOR_C_RT, score_half2_NOR_C_RT, use = "pairwise.complete.obs")
+
+r_corr_NOR_C_RT <- (2 * r_NOR_C_RT) / (1 + r_NOR_C_RT)
+```
+
+``` {r}
+cat("Split-half reliability (Spearman-Brown corrected) for RTs in Norwegian Comprehension:", round(r_corr_NOR_C_RT, 2), "\n")
+```
+
+# Correlations between tasks + accuracy and RTs
+## Polish
+``` {r}
+data_total_PL <- data_pl %>%
+  left_join(data_pl_out_outliers %>%
+              select(child_id, word, task, logRT),
+            by = c("child_id", "word", "task"))
+
+scores_PL <- data_total_PL %>%
+  group_by(child_id, task) %>%
+  summarise(
+    acc = mean(accuracy_strict, na.rm = TRUE),
+    rt = mean(logRT, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  tidyr::pivot_wider(names_from = task, values_from = c(acc, rt))
+```
+
+``` {r}
+psych::corr.test(scores_PL[, c("acc_P", "acc_C", "rt_P", "rt_C")],
+                 method = "spearman", use = "pairwise")
+
+psych::corr.test(scores_PL[, c("acc_P", "acc_C", "rt_P", "rt_C")],
+                 method = "spearman", use = "pairwise")$p
+```
+
+## Norwegian
+
+``` {r}
+data_total_no <- data_no %>%
+  left_join(data_no_out_outliers %>%
+              select(child_id, word, task, logRT),
+            by = c("child_id", "word", "task"))
+
+scores_NOR <- data_total_no %>%
+  group_by(child_id, task) %>%
+  summarise(
+    acc = mean(accuracy_strict, na.rm = TRUE),
+    rt = mean(logRT, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  tidyr::pivot_wider(names_from = task, values_from = c(acc, rt))
+```
+
+``` {r}
+psych::corr.test(scores_NOR[, c("acc_P", "acc_C", "rt_P", "rt_C")],
+                 method = "spearman", use = "pairwise")
+
+psych::corr.test(scores_NOR[, c("acc_P", "acc_C", "rt_P", "rt_C")],
+                 method = "spearman", use = "pairwise")$p
+```
+
+## Bilinguals: Polish vs Norwegian
+
+``` {r}
+common_children <- intersect(unique(data_total_PL$child_id),
+                             unique(data_total_no$child_id))
+length(common_children)
+data_PL_common <- filter(data_total_PL, child_id %in% common_children)
+data_no_common <- filter(data_total_no, child_id %in% common_children)
+
+bi_scores_PL <- data_PL_common %>%
+  group_by(child_id, task) %>%
+  summarise(acc = mean(accuracy_strict, na.rm = TRUE),
+            rt = mean(logRT, na.rm = TRUE),
+            .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = task, values_from = c(acc, rt), names_prefix = "PL_")
+
+bi_scores_no <- data_no_common %>%
+  group_by(child_id, task) %>%
+  summarise(acc = mean(accuracy_strict, na.rm = TRUE),
+            rt = mean(logRT, na.rm = TRUE),
+            .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = task, values_from = c(acc, rt), names_prefix = "NOR_")
+
+bi_scores_all <- left_join(bi_scores_PL, bi_scores_no, by = "child_id")
+```
+
+### Accuracy in production
+
+``` {r}
+cor.test(bi_scores_all$acc_PL_P, bi_scores_all$acc_NOR_P, method = "spearman")
+```
+
+### Accuracy in comprehension
+
+``` {r}
+cor.test(bi_scores_all$acc_PL_C, bi_scores_all$acc_NOR_C, method = "spearman")
+```
+
+### RTs in production
+
+``` {r}
+cor.test(bi_scores_all$rt_PL_P, bi_scores_all$rt_NOR_P, method = "spearman")
+```
+
+### RTs in comprehension
+
+``` {r}
+cor.test(bi_scores_all$rt_PL_C, bi_scores_all$rt_NOR_C, method = "spearman")
+```
   
 # Power analysis
 
