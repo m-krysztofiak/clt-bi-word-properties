@@ -22,6 +22,7 @@ library(gtsummary)
 library(flextable)
 library(officer)
 library(simr)
+library(MuMIn)
 ```
 
 ```{r data, include=FALSE}
