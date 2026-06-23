@@ -13,10 +13,15 @@ options(scipen = 999) #removes scietific notation
 
 ```{r libraries, include=FALSE}
 library(tidyverse)
+library(Hmisc)
 library(lme4)
 library(broom.mixed) #for RMarkdown tables
 library(knitr) #for RMarkdown tables
 library(afex)
+library(gtsummary)
+library(flextable)
+library(officer)
+library(simr)
 ```
 
 ```{r data, include=FALSE}
@@ -44,7 +49,7 @@ data_pl_filtered <- data_pl %>%
   filter(reaction_time>=1000) %>%
   filter(complete.cases(frequency_cds, Imageability, AoA))
 length(data_pl_filtered$reaction_time) 
-#there are 11236 measured reaction times for correct responses and complete cases, 
+#there are 11173 measured reaction times for correct responses and complete cases, 
 #RTs>=1000 ms
 
 mean_RT_PL <- data_pl_filtered %>%
@@ -172,13 +177,13 @@ ln(x+1) (bc there are same frequencies = 0)
 data_no_out_outliers <- data_no_out_outliers %>%
   mutate(
     frequency_cds_scaled = scale(log(frequency_cds+1),
-                                 center = TRUE, scale = TRUE),
+                                 center = T, scale = T),
     frequency_scaled = scale(log(Frequency), 
-                             center = TRUE, scale = TRUE),
+                             center = T, scale = T),
     imageability_scaled = scale(Imageability, 
-                                center = TRUE, scale = TRUE),
+                                center = T, scale = T),
     AoA_scaled = scale(AoA, 
-                       center = TRUE, scale = TRUE),
+                       center = T, scale = T),
     logRT=log(reaction_time))
 
 data_no_out_outliers$group <-relevel(factor(data_no_out_outliers$group), ref="monoNO")
@@ -187,57 +192,49 @@ data_no_out_outliers$group <-relevel(factor(data_no_out_outliers$group), ref="mo
 data_no <- data_no %>%
   mutate(
     frequency_cds_scaled = scale(log(frequency_cds+1),
-                                 center = TRUE, scale = TRUE),
+                                 center = T, scale = T),
     frequency_scaled = scale(log(Frequency + 1), 
-                             center = TRUE, scale = TRUE),
-    imageability_scaled = scale(Imageability, center = TRUE, 
-                                scale = TRUE),
+                             center = T, scale = T),
+    imageability_scaled = scale(Imageability, center = T, 
+                                scale = T),
     AoA_scaled = scale(AoA, 
-                       center = TRUE, scale = TRUE))
+                       center = T, scale = T))
 
 data_no$group <-relevel(factor(data_no$group), ref="monoNO")
 ```
 
 ## Correlations between word properties
 
+### Polish
+
 ```{r include = FALSE}
-df_num <- data_pl %>%
-  distinct(word, frequency_cds_scaled, frequency_scaled, Imageability, AoA) %>%
+df_num_pl <- data_pl %>%
+  distinct(word, frequency_cds, Imageability, AoA) %>%
   select(-word)
-
-cor_mat_spearman <- cor(df_num,
-                        method = "spearman",
-                        use = "complete.obs")
-
-library(Hmisc)
-cor_res <- rcorr(as.matrix(df_num), type = "spearman")
+cor_res <- rcorr(as.matrix(df_num_pl), type = "spearman")
+cor_res
 # correlation matrix
 cor_res$r
 # p-values
 cor_res$P
+#degrees of freedom
+cor_res$n - 2
 ```
 
-```{r echo = FALSE}
-library(corrplot)
-corrplot(cor_res$r,
-         p.mat = cor_res$P,
-         sig.level = 0.05,
-         method = "circle",
-         type = "upper",
-         tl.col = "black",
-         diag = FALSE,
-         insig = "blank")
-```
+### Norwegian
 
-Lack of correlation between frequency is suprising...
-
-```{r echo =FALSE}
-df_num %>% 
-  ggplot(aes(x = frequency_scaled, y = frequency_cds_scaled)) +
-  geom_point(color = "lightpink", alpha = .8) +
-  theme_classic() +
-  labs(x = "SUBTLEX",
-       y = "CDS")
+```{r include = FALSE}
+df_num_no <- data_no %>%
+  distinct(word, frequency_cds, Imageability, AoA) %>%
+  select(-word)
+cor_res_no <- rcorr(as.matrix(df_num_no), type = "spearman")
+cor_res_no
+# correlation matrix
+cor_res_no$r
+# p-values
+cor_res_no$P
+#degrees of freedom
+cor_res_no$n - 2
 ```
 
 ## Accuracy Models
@@ -250,13 +247,13 @@ We run all models together (divided only into accuracy and RTs):
 
 ### Scale age and bind data
 
-```{r acc-data-scale-age}
+```{r acc-data-scale-age, include = FALSE}
 #scale and center age
 data_pl$Age_scaled <- scale(data_pl$Age, center = T, scale = T)
 data_no$Age_scaled <- scale(data_no$Age, center = T, scale = T)
 ```
 
-```{r bind data}
+```{r bind data, include = FALSE}
 bind_rows(data_pl, data_no) %>%
   mutate(group = if_else(group == "bi","bi","mono")) %>%
   mutate(group = fct_relevel(group, "mono", "bi")) -> data_full
@@ -264,11 +261,16 @@ bind_rows(data_pl, data_no) %>%
 
 ### Prepare models
 
-```{r models-accuracy-all}
-formula_glmer <- accuracy_strict ~ group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-                        Age_scaled * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-                        imageability_scaled * frequency_cds_scaled +
-                        (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) +
+```{r models-accuracy-all, echo = FALSE}
+formula_glmer <- accuracy_strict ~ 
+  Age_scaled +
+  group * (AoA_scaled + 
+             imageability_scaled + 
+             frequency_cds_scaled) +
+  imageability_scaled * frequency_cds_scaled +
+  (1 + AoA_scaled + 
+     imageability_scaled + 
+     frequency_cds_scaled | child_id) +
   (1 | word)
 
 ctrl <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
@@ -293,7 +295,7 @@ summary(models_acc)
 Check convergence:
 No warnings.
 
-```{r convergence-acc-checks}
+```{r convergence-acc-checks, echo = FALSE}
 lapply(models_acc, function(m) {
   w <- m@optinfo$conv$lme4$messages
   if (is.null(w)) "OK" else w
@@ -302,26 +304,42 @@ lapply(models_acc, function(m) {
 
 ### Polish Comprehension
 
-```{r}
+```{r, echo = FALSE}
 summary(models_acc$polish_c_acc)
 ```
 
 ### Polish Production
 
-```{r}
+```{r, echo = FALSE}
 summary(models_acc$polish_p_acc)
 ```
 
 ### Norwegian Comprehension
 
-```{r}
+```{r, echo = FALSE}
 summary(models_acc$norwegian_c_acc)
 ```
 
 ### Norwegian Production
 
-```{r}
+```{r, echo = FALSE}
 summary(models_acc$norwegian_p_acc)
+```
+
+### Extract table
+
+```{r tables-accuracy-models, eval = FALSE}
+# Build a merged table
+merged_table <- tbl_merge(
+  tbls = lapply(models_acc, function(m) tbl_regression(m, exponentiate = TRUE)),
+  tab_spanner = names(models_acc)   # uses list names as column headers
+)
+
+# Export
+doc <- read_docx() %>%
+  body_add_flextable(as_flex_table(merged_table))
+
+print(doc, target = "glmer_summary.docx")
 ```
 
 ##  RTs models
@@ -345,8 +363,8 @@ bind_rows(data_pl_out_outliers, data_no_out_outliers) %>%
 First more complex with random slopes:
 
 ```{r models-rts-all}
-formula_lmer <- logRT ~ group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-                        Age_scaled * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+formula_lmer <- logRT ~ Age_scaled + 
+  group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
                         imageability_scaled * frequency_cds_scaled +
                         (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + 
   (1 | word)
@@ -382,10 +400,10 @@ lapply(models_rt, function(m) {
 We proceed with simpler models (no random slopes)
 
 ```{r models-rts-all-simple}
-formula_lmer_simpler <- logRT ~ group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-                        Age_scaled * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
-                        imageability_scaled * frequency_cds_scaled +
-                        (1 | child_id) + (1 | word)
+formula_lmer_simpler <- logRT ~ Age_scaled + 
+  group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
+  imageability_scaled * frequency_cds_scaled +
+  (1 | child_id) + (1 | word)
 
 ctrl <- lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
 
@@ -416,26 +434,43 @@ lapply(models_rt_simpler, function(m) {
 ### Polish Comprehension
 
 ```{r}
-summary(models_rt$polish_c_rt)
+summary(models_rt_simpler$polish_c_rt)
 ```
 
 ### Polish Production
 
 ```{r}
-summary(models_rt$polish_p_rt)
+summary(models_rt_simpler$polish_p_rt)
 ```
 
 ### Norwegian Comprehension
 
 ```{r}
-summary(models_rt$norwegian_c_rt)
+summary(models_rt_simpler$norwegian_c_rt)
 ```
 
 ### Norwegian Production
 
 ```{r}
-summary(models_rt$norwegian_p_rt)
+summary(models_rt_simpler$norwegian_p_rt)
 ```
+
+### Export Tables
+
+```{r tables-rts-models, eval = FALSE}
+# Build a merged table
+merged_table_rt <- tbl_merge(
+  tbls = lapply(models_rt_simpler, function(m) tbl_regression(m, exponentiate = TRUE)),
+  tab_spanner = names(models_rt_simpler)   # uses list names as column headers
+)
+
+# Export
+doc_rt <- read_docx() |>
+  body_add_flextable(as_flex_table(merged_table_rt))
+
+print(doc_rt, target = "lmer_summary.docx")
+```
+  
 
 # Exposure and Accuracy
 
@@ -514,7 +549,7 @@ summary(models_acc_exposure$norwegian_c_exposure)
 ```{r}
 summary(models_acc_exposure$norwegian_p_exposure)
 ``` 
-  
+
 # Exposure and RTs
 
 ```{r select-bi-no-outliers}
@@ -951,3 +986,214 @@ cor.test(bi_scores_all$rt_PL_P, bi_scores_all$rt_NOR_P, method = "spearman")
 ``` {r}
 cor.test(bi_scores_all$rt_PL_C, bi_scores_all$rt_NOR_C, method = "spearman")
 ```
+  
+# Power analysis
+
+## Accuracy
+
+We conduct analyses on a simpler model - without random slopes -
+more similar to the one in Łuniewska et al. (2022).
+
+Some effects were reveresed since in Łuniewska et al. (2022)
+baseline for group was "bilingual"
+
+```{r acc-model-power}
+acc_model_power <- glmer(accuracy_strict ~ 
+                       group * (AoA_scaled + 
+                                  imageability_scaled + 
+                                  frequency_cds_scaled) + 
+                         imageability_scaled*frequency_cds_scaled +
+                       (1 | child_id) +
+                       (1 | word),
+                            data = data_full %>% filter(language == "POLISH" & task == "P"),
+                            family = binomial,
+                            control = glmerControl(optimizer = "bobyqa", 
+                                                   optCtrl = list(maxfun = 2e5)))
+summary(acc_model_power)
+```
+
+```{r effects-acc}
+#two separate vectors bc group is "group" in the model and "groupbi" in the results
+lit_effects_acc <- list(
+  fixef_name  = c("groupbi",                     
+                  "AoA_scaled",      
+                  "imageability_scaled",   
+                  "frequency_cds_scaled",   
+                  "groupbi:frequency_cds_scaled"),
+  test_name   = c("group",                        
+                  "AoA_scaled",      
+                  "imageability_scaled",   
+                  "frequency_cds_scaled",   
+                  "group:frequency_cds_scaled"),
+  effect_size = c(-0.66, #reversed                        
+                  -1.02,            
+                  0.73,                 
+                  0.38,                  
+                  0.20) #reversed
+)
+
+pwr_results_acc <- list()
+
+for (i in seq_along(lit_effects_acc$fixef_name)) {
+  
+  fixef_name  <- lit_effects_acc$fixef_name[i]
+  test_name   <- lit_effects_acc$test_name[i]
+  effect_size <- lit_effects_acc$effect_size[i]
+  
+  cat("\n>>> Running power simulation for:", fixef_name, "\n")
+  
+  model_tmp <- model_power_acc
+  
+  if (!fixef_name %in% names(fixef(model_tmp))) {
+    warning("Coefficient not found: ", fixef_name, " — skipping.")
+    next
+  }
+  
+  fixef(model_tmp)[fixef_name] <- effect_size
+  
+  pwr_results_acc[[fixef_name]] <- powerSim(
+    model_tmp,
+    test = fixed(fixef_name, method = "z"),
+    nsim = 500,
+    seed = 42
+  )
+  
+  print(pwr_results_acc[[fixef_name]])
+}
+
+beepr::beep(sound = 1)
+```
+
+### Power analysis frequency x imageability
+
+```{r pa-freq-im}
+# Use the literature-derived effect, with sign matching your hypothesis
+fixef(acc_model_power)["imageability_scaled:frequency_cds_scaled"] <- acc_effect_imageability_frequency
+
+#power analysis
+pwr_analysis_freq_im <- powerSim(acc_model_power, 
+         test = fixed("imageability_scaled:frequency_cds_scaled", method = "z"),
+         nsim = 500)
+pwr_analysis_freq_im
+beepr::beep(sound = 1)
+```
+
+## RTs
+
+```{r rt-power-model}
+#model
+#with raw RTs to match the ones in Łuniewska et al.
+model_power_rt <- lme4::lmer(reaction_time ~ 
+                       group * (AoA_scaled + 
+                                  imageability_scaled + 
+                                  frequency_cds_scaled) + 
+                       (1 | child_id) +
+                       (1 | word),
+                            data = data_full_out_outliers %>% filter(language == "POLISH" & task == "P"),
+                            control = lmerControl(optimizer = "bobyqa", 
+                                                   optCtrl = list(maxfun = 2e5)))
+summary(model_power_rt)
+fixef(model_power_rt)
+```
+
+```{r effects-rts}
+#two separate vectors bc group is "group" in the model and "groupbi" in the results
+lit_effects_rts <- list(
+  fixef_name  = c("groupbi",                     
+                  "AoA_scaled",      
+                  "imageability_scaled",   
+                  "frequency_cds_scaled",   
+                  "groupbi:imageability_scaled",   
+                  "groupbi:frequency_cds_scaled"),
+  test_name   = c("group",                        
+                  "AoA_scaled",      
+                  "imageability_scaled",   
+                  "frequency_cds_scaled",   
+                  "group:imageability_scaled",      
+                  "group:frequency_cds_scaled"),
+  effect_size = c(385.44,                         
+                  270.16,            
+                  -256.32,                 
+                  -189.82,                  
+                  -219.02,                          
+                  134.81)
+)
+
+pwr_results_rt <- list()
+
+for (i in seq_along(lit_effects_rts$fixef_name)) {
+  
+  fixef_name  <- lit_effects_rts$fixef_name[i]
+  test_name   <- lit_effects_rts$test_name[i]
+  effect_size <- lit_effects_rts$effect_size[i]
+  
+  cat("\n>>> Running power simulation for:", fixef_name, "\n")
+  
+  model_tmp <- model_power_rt
+  
+  if (!fixef_name %in% names(fixef(model_tmp))) {
+    warning("Coefficient not found: ", fixef_name, " — skipping.")
+    next
+  }
+  
+  fixef(model_tmp)[fixef_name] <- effect_size
+  
+  pwr_results_rt[[fixef_name]] <- powerSim(
+    model_tmp,
+    test = fixed(fixef_name, method = "t"),
+    nsim = 500,
+    seed = 42
+  )
+  
+  print(pwr_results_rt[[fixef_name]])
+}
+
+beepr::beep(sound = 1)
+```
+
+# Post-Hoc Power Sensitivity Analysis using the SESOI
+
+[link](https://thechangelab.stanford.edu/tutorials/power-analysis/post-hoc-power-sensitivity-analysis-using-the-sesoi/)
+
+```{r}
+model_power_rt <- lme4::lmer(logRT ~ 
+                       group * (AoA_scaled + 
+                                  imageability_scaled + 
+                                  frequency_cds_scaled) + 
+                       (1 | child_id) +
+                       (1 | word),
+                            data = data_full_out_outliers %>% 
+                         filter(language == "POLISH" & task == "P"),
+                            control = lmerControl(optimizer = "bobyqa", 
+                                                   optCtrl = list(maxfun = 2e5)))
+summary(model_power_rt)
+#Power for the effect of interest
+sim_power_fixed <- simr::powerSim(model_power_rt,
+                                  test = fixed("groupbi", method = "z"),
+                                  seed = 1234,
+                                  nsim = 500)
+sim_power_fixed
+
+SESOI <- 1.0 #setting the smallest effect size to test
+SESOI_Power <- 0.04 #current power
+
+#repeat until the power reaches 80%
+while (SESOI_Power < 0.8){
+  #update the effect size
+  SESOI <- SESOI + 0.05 #increase by 0.1
+  fixef(model_power_rt)["groupbi"] <- SESOI
+  
+  #Power for the effect of interest
+  SimPower_Fixed <- simr::powerSim(model_power_rt,
+                                   test=simr::fixed("groupbi", method="z"),
+                                   seed=1234, #set for replication
+                                   nsim=100, #set low for time or high for real
+                                   alpha=.05, progress=FALSE) #options
+
+  #examine post-hoc power
+  SESOI_Power <- summary(SimPower_Fixed)$mean #save the power estimate
+  cat(SESOI,"with power",SESOI_Power,"\n")
+}
+SESOI
+```
+
