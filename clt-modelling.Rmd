@@ -436,18 +436,21 @@ lapply(models_rt_simpler, function(m) {
 
 ```{r}
 summary(models_rt_simpler$polish_c_rt)
+r.squaredGLMM(models_rt_simpler$polish_c_rt)
 ```
 
 ### Polish Production
 
 ```{r}
 summary(models_rt_simpler$polish_p_rt)
+r.squaredGLMM(models_rt_simpler$polish_p_rt)
 ```
 
 ### Norwegian Comprehension
 
 ```{r}
 summary(models_rt_simpler$norwegian_c_rt)
+r.squaredGLMM(models_rt_simpler$norwegian_c_rt)
 ```
 
 ### Norwegian Production
