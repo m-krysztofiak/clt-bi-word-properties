@@ -1226,3 +1226,266 @@ while (SESOI_Power < 0.8){
 SESOI
 ```
 
+# Visualisations
+
+## Polish
+
+##  Accuracy Comprehension
+
+```{r pl-acc-comp-plot}
+
+acc_PL_C_p1 <- ggplot(data_pl %>% filter(task == "C"), 
+             aes(x = AoA, y = accuracy_strict, color = group, fill = group)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+  scale_y_continuous(
+    name = "Accuracy (%)",
+    limits = c(0, 1),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  scale_color_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  scale_fill_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  labs(x = "AoA (in years)") +
+  theme_minimal()
+
+
+acc_PL_C_p2 <- ggplot(data_pl %>% filter(task == "C"), 
+             aes(x = Imageability, y = accuracy_strict, color = group, fill = group)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+  scale_y_continuous(name = "Accuracy (%)", limits = c(0, 1), labels = scales::percent_format(accuracy = 1)) +
+  labs(x = "Imageability (0 to 7)") +
+  scale_color_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  scale_fill_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  theme_minimal()+
+  theme(legend.position = "none")
+
+acc_PL_C_p3 <- ggplot(data_pl %>% filter(task == "C"), 
+             aes(x = frequency_cds_scaled, y = accuracy_strict, color = group, fill = group)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+  scale_y_continuous(name = "Accuracy (%)", limits = c(0, 1), labels = scales::percent_format(accuracy = 1)) +
+  labs(x= "Scaled CDS log-frequency") +
+  scale_color_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  scale_fill_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+(acc_PL_C_p1 | acc_PL_C_p2 | acc_PL_C_p3) + plot_annotation(title = "Polish Comprehension") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+```
+
+##  Accuracy Production
+
+```{r pl-acc-prod-plot}
+acc_PL_P_p1 <- ggplot(data_pl %>% filter(task == "P"), 
+                      aes(x = AoA, y = accuracy_strict, color = group, fill = group)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+  scale_y_continuous(
+    name = "Accuracy (%)",
+    limits = c(0, 1),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  scale_color_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  scale_fill_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  labs(x = "AoA (in years)") +
+  theme_minimal()
+
+
+acc_PL_P_p2 <- ggplot(data_pl %>% filter(task == "P"), 
+                      aes(x = Imageability, y = accuracy_strict, color = group, fill = group)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+  scale_y_continuous(name = "Accuracy (%)", limits = c(0, 1), labels = scales::percent_format(accuracy = 1)) +
+  labs(x = "Imageability (0 to 7)") +
+  scale_color_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  scale_fill_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  theme_minimal()+
+  theme(legend.position = "none")
+
+acc_PL_P_p3 <- ggplot(data_pl %>% filter(task == "P"), 
+                      aes(x = frequency_cds_scaled, y = accuracy_strict, color = group, fill = group)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+  scale_y_continuous(name = "Accuracy (%)", limits = c(0, 1), labels = scales::percent_format(accuracy = 1)) +
+  labs(x= "Scaled CDS log-frequency") +
+  scale_color_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  scale_fill_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+(acc_PL_P_p1 | acc_PL_P_p2 | acc_PL_P_p3) + plot_annotation(title = "Polish Production") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+```
+
+##  Comprehension RTs
+
+```{r pl-rt-comp-plot}
+rt_PL_C_p1 <- ggplot(data_pl_out_outliers %>% filter(task == "C"), 
+                      aes(x = AoA, y = logRT, color = group, fill = group)) +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_y_continuous(
+    name = "log Reaction Times",
+    limits= c(7.5,8.5)) +
+  scale_color_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  scale_fill_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  labs(x = "AoA (in years)") +
+  theme_minimal()
+
+rt_PL_C_p2 <- ggplot(data_pl_out_outliers %>% filter(task == "C"), 
+                     aes(x = Imageability, y = logRT, color = group, fill = group)) +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_y_continuous(
+    name = "log RT",
+    limits= c(7.5,8.5)) +
+  scale_color_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  scale_fill_manual(
+    name = "Group",
+    values = c("monoPL" = "blue", "bi" = "red"),
+    labels = c("Monolinguals", "Bilinguals")
+  ) +
+  labs(x = "Imageability (1 to 7)") +
+  theme_minimal()
+  theme(legend.position = "none")
+  
+rt_PL_C_p3 <- ggplot(data_pl_out_outliers %>% filter(task == "C"), 
+                       aes(x = frequency_cds_scaled, y = logRT, color = group, fill = group)) +
+    geom_smooth(method = "lm", se = TRUE) +
+    scale_y_continuous(
+      name = "log RT",
+      limits= c(7.5,8.5)) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoPL" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoPL" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "Scaled CDS log-frequency") +
+    theme_minimal()
+  theme(legend.position = "none")
+
+(rt_PL_C_p1 | rt_PL_C_p2 | rt_PL_C_p3) + plot_annotation(title = "Polish Comprehension") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+```
+
+##  Production RTs
+
+```{r pl-rt-prod-plot}
+rt_PL_P_p1 <- ggplot(data_pl_out_outliers %>% filter(task == "P"), 
+                       aes(x = AoA, y = logRT, color = group, fill = group)) +
+    geom_smooth(method = "lm", se = TRUE) +
+    scale_y_continuous(
+      name = "log RT",
+      limits= c(7.5,8.5)) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoPL" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoPL" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "AoA (in years)") +
+    theme_minimal()
+  
+  rt_PL_P_p2 <- ggplot(data_pl_out_outliers %>% filter(task == "P"), 
+                       aes(x = Imageability, y = logRT, color = group, fill = group)) +
+    geom_smooth(method = "lm", se = TRUE) +
+    scale_y_continuous(
+      name = "log RT",
+      limits= c(7.5,8.5)) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoPL" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoPL" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "Imageability (1 to 7)") +
+    theme_minimal()
+  theme(legend.position = "none")
+  
+  rt_PL_P_p3 <- ggplot(data_pl_out_outliers %>% filter(task == "P"), 
+                       aes(x = frequency_cds_scaled, y = logRT, color = group, fill = group)) +
+    geom_smooth(method = "lm", se = TRUE) +
+    scale_y_continuous(
+      name = "log RT",
+      limits= c(7.5,8.5)) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoPL" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoPL" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "Scaled log-frequency") +
+    theme_minimal()
+  theme(legend.position = "none")
+  
+  (rt_PL_P_p1 | rt_PL_P_p2 | rt_PL_P_p3) + plot_annotation(title = "Polish Production") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+```
+
