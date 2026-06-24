@@ -210,8 +210,11 @@ data_no$group <-relevel(factor(data_no$group), ref="monoNO")
 
 ```{r include = FALSE}
 df_num_pl <- data_pl %>%
-  distinct(word, frequency_cds, Imageability, AoA) %>%
+  distinct(word, frequency_cds_scaled, 
+           imageability_scaled, 
+           AoA_scaled) %>%
   select(-word)
+df_num_pl$freq_imag <- df_num_pl$frequency_cds_scaled * df_num_pl$imageability_scaled
 cor_res <- rcorr(as.matrix(df_num_pl), type = "spearman")
 cor_res
 # correlation matrix
@@ -220,6 +223,7 @@ cor_res$r
 cor_res$P
 #degrees of freedom
 cor_res$n - 2
+
 ```
 
 ### Norwegian
@@ -315,6 +319,7 @@ lapply(models_acc, function(m) {
 ```{r, echo = FALSE}
 summary(models_acc$polish_c_acc)
 r.squaredGLMM(models_acc$polish_c_acc)
+vif(models_acc$polish_c_acc)
 #we consider theoretical R 
 #(not impacted by the lack of convergence of the null model)
 ```
