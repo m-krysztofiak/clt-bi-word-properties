@@ -286,7 +286,14 @@ conditions <- list(
 
 models_acc <- lapply(conditions, function(cond) {
   df_sub <- subset(data_full, language == cond$language & task == cond$task)
-  glmer(formula_glmer, data = df_sub, control = ctrl, family = binomial)
+  model <- glmer(formula_glmer, data = df_sub, control = ctrl, family = binomial)
+  
+  # Create a unique env-stable name
+  data_name <- paste0("data_", cond$language, "_", cond$task)
+  assign(data_name, df_sub, envir = globalenv())
+  model@call$data <- as.name(data_name)
+  
+  model
 })
 
 # models
@@ -307,24 +314,36 @@ lapply(models_acc, function(m) {
 
 ```{r, echo = FALSE}
 summary(models_acc$polish_c_acc)
+r.squaredGLMM(models_acc$polish_c_acc)
+#we consider theoretical R 
+#(not impacted by the lack of convergence of the null model)
 ```
 
 ### Polish Production
 
 ```{r, echo = FALSE}
 summary(models_acc$polish_p_acc)
+r.squaredGLMM(models_acc$polish_p_acc)
+#we consider theoretical R 
+#(not impacted by the lack of convergence of the null model)
 ```
 
 ### Norwegian Comprehension
 
 ```{r, echo = FALSE}
 summary(models_acc$norwegian_c_acc)
+r.squaredGLMM(models_acc$norwegian_c_acc)
+#we consider theoretical R 
+#(not impacted by the lack of convergence of the null model)
 ```
 
 ### Norwegian Production
 
 ```{r, echo = FALSE}
 summary(models_acc$norwegian_p_acc)
+r.squaredGLMM(models_acc$norwegian_p_acc)
+#we consider theoretical R 
+#(not impacted by the lack of convergence of the null model)
 ```
 
 ### Extract table
@@ -457,6 +476,7 @@ r.squaredGLMM(models_rt_simpler$norwegian_c_rt)
 
 ```{r}
 summary(models_rt_simpler$norwegian_p_rt)
+r.squaredGLMM(models_rt_simpler$norwegian_p_rt)
 ```
 
 ### Export Tables
