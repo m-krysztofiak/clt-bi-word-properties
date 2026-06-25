@@ -23,6 +23,8 @@ library(flextable)
 library(officer)
 library(simr)
 library(MuMIn)
+library(parameters)
+library(patchwork)
 ```
 
 ```{r data, include=FALSE}
@@ -1071,7 +1073,7 @@ for (i in seq_along(lit_effects_acc$fixef_name)) {
   
   cat("\n>>> Running power simulation for:", fixef_name, "\n")
   
-  model_tmp <- model_power_acc
+  model_tmp <- acc_model_power
   
   if (!fixef_name %in% names(fixef(model_tmp))) {
     warning("Coefficient not found: ", fixef_name, " — skipping.")
@@ -1083,14 +1085,14 @@ for (i in seq_along(lit_effects_acc$fixef_name)) {
   pwr_results_acc[[fixef_name]] <- powerSim(
     model_tmp,
     test = fixed(fixef_name, method = "z"),
-    nsim = 500,
+    nsim = 10,
     seed = 42
   )
   
   print(pwr_results_acc[[fixef_name]])
 }
 
-beepr::beep(sound = 1)
+#beepr::beep(sound = 1)
 ```
 
 ### Power analysis frequency x imageability
@@ -1104,7 +1106,7 @@ pwr_analysis_freq_im <- powerSim(acc_model_power,
          test = fixed("imageability_scaled:frequency_cds_scaled", method = "z"),
          nsim = 500)
 pwr_analysis_freq_im
-beepr::beep(sound = 1)
+#beepr::beep(sound = 1)
 ```
 
 ## RTs
@@ -1230,7 +1232,7 @@ SESOI
 
 ## Polish
 
-##  Accuracy Comprehension
+###  Accuracy Comprehension
 
 ```{r pl-acc-comp-plot}
 
@@ -1295,7 +1297,7 @@ acc_PL_C_p3 <- ggplot(data_pl %>% filter(task == "C"),
 (acc_PL_C_p1 | acc_PL_C_p2 | acc_PL_C_p3) + plot_annotation(title = "Polish Comprehension") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
 ```
 
-##  Accuracy Production
+###  Accuracy Production
 
 ```{r pl-acc-prod-plot}
 acc_PL_P_p1 <- ggplot(data_pl %>% filter(task == "P"), 
@@ -1359,7 +1361,7 @@ acc_PL_P_p3 <- ggplot(data_pl %>% filter(task == "P"),
 (acc_PL_P_p1 | acc_PL_P_p2 | acc_PL_P_p3) + plot_annotation(title = "Polish Production") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
 ```
 
-##  Comprehension RTs
+###  Comprehension RTs
 
 ```{r pl-rt-comp-plot}
 rt_PL_C_p1 <- ggplot(data_pl_out_outliers %>% filter(task == "C"), 
@@ -1424,7 +1426,7 @@ rt_PL_C_p3 <- ggplot(data_pl_out_outliers %>% filter(task == "C"),
 (rt_PL_C_p1 | rt_PL_C_p2 | rt_PL_C_p3) + plot_annotation(title = "Polish Comprehension") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
 ```
 
-##  Production RTs
+###  Production RTs
 
 ```{r pl-rt-prod-plot}
 rt_PL_P_p1 <- ggplot(data_pl_out_outliers %>% filter(task == "P"), 
@@ -1482,10 +1484,506 @@ rt_PL_P_p1 <- ggplot(data_pl_out_outliers %>% filter(task == "P"),
       values = c("monoPL" = "blue", "bi" = "red"),
       labels = c("Monolinguals", "Bilinguals")
     ) +
-    labs(x = "Scaled log-frequency") +
+    labs(x = "Scaled CDS log-frequency") +
     theme_minimal()
   theme(legend.position = "none")
   
   (rt_PL_P_p1 | rt_PL_P_p2 | rt_PL_P_p3) + plot_annotation(title = "Polish Production") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+```
+
+##  Norwegian
+
+### Comprehension Accuracy
+
+```{r no-acc-comp-plot}
+acc_NOR_C_p1 <- ggplot(data_no %>% filter(task == "C"), 
+                        aes(x = AoA, y = accuracy_strict, color = group, fill = group)) +
+    geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+    scale_y_continuous(
+      name = "Accuracy (%)",
+      limits = c(0, 1),
+      labels = scales::percent_format(accuracy = 1)
+    ) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "AoA (in years)") +
+    theme_minimal()
+  
+  
+acc_NOR_C_p2 <- ggplot(data_no %>% filter(task == "C"), 
+                        aes(x = Imageability, y = accuracy_strict, color = group, fill = group)) +
+    geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+    scale_y_continuous(name = "Accuracy (%)", limits = c(0, 1), labels = scales::percent_format(accuracy = 1)) +
+    labs(x = "Imageability (0 to 7)") +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    theme_minimal()+
+    theme(legend.position = "none")
+  
+  acc_NOR_C_p3 <- ggplot(data_no %>% filter(task == "C"), 
+                        aes(x = frequency_cds_scaled, y = accuracy_strict, color = group, fill = group)) +
+    geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+    scale_y_continuous(name = "Accuracy (%)", limits = c(0, 1), labels = scales::percent_format(accuracy = 1)) +
+    labs(x= "Scaled CDS log-frequency") +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none")
+  
+(acc_NOR_C_p1 | acc_NOR_C_p2 | acc_NOR_C_p3) + plot_annotation(title = "Norwegian Comprehension") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+```
+
+### Production Accuracy
+
+```{r no-acc-prod-plot}
+acc_NOR_P_p1 <- ggplot(data_no %>% filter(task == "P"), 
+                         aes(x = AoA, y = accuracy_strict, color = group, fill = group)) +
+    geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+    scale_y_continuous(
+      name = "Accuracy (%)",
+      limits = c(0, 1),
+      labels = scales::percent_format(accuracy = 1)
+    ) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "AoA (in years)") +
+    theme_minimal()
+  
+  
+acc_NOR_P_p2 <- ggplot(data_no %>% filter(task == "P"), 
+                         aes(x = Imageability, y = accuracy_strict, color = group, fill = group)) +
+    geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+    scale_y_continuous(name = "Accuracy (%)", limits = c(0, 1), labels = scales::percent_format(accuracy = 1)) +
+    labs(x = "Imageability (0 to 7)") +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    theme_minimal()+
+    theme(legend.position = "none")
+  
+acc_NOR_P_p3 <- ggplot(data_no %>% filter(task == "P"), 
+                         aes(x = frequency_cds_scaled, y = accuracy_strict, color = group, fill = group)) +
+    geom_smooth(method = "glm", method.args = list(family = "binomial"(link = "logit")), se = TRUE) +
+    scale_y_continuous(name = "Accuracy (%)", limits = c(0, 1), labels = scales::percent_format(accuracy = 1)) +
+    labs(x= "Scaled CDS log-frequency") +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none")
+  
+(acc_NOR_P_p1 | acc_NOR_P_p2 | acc_NOR_P_p3) + plot_annotation(title = "Norwegian Production") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+  
+
+```
+
+### Comprehension RTs
+
+```{r no-rt-comp-plot}
+rt_NOR_C_p1 <- ggplot(data_no_out_outliers %>% filter(task == "C"), 
+                       aes(x = AoA, y = logRT, color = group, fill = group)) +
+    geom_smooth(method = "lm", se = TRUE) +
+    scale_y_continuous(
+      name = "log RT",
+      limits= c(7.5,8.5)) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "AoA (in years)") +
+    theme_minimal()
+  
+rt_NOR_C_p2 <- ggplot(data_no_out_outliers %>% filter(task == "C"), 
+                       aes(x = Imageability, y = logRT, color = group, fill = group)) +
+    geom_smooth(method = "lm", se = TRUE) +
+    scale_y_continuous(
+      name = "log RT",
+      limits= c(7.5,8.5)) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "Imageability (1 to 7)") +
+    theme_minimal()
+  theme(legend.position = "none")
+  
+rt_NOR_C_p3 <- ggplot(data_no_out_outliers %>% filter(task == "C"), 
+                       aes(x = frequency_cds_scaled, y = logRT, color = group, fill = group)) +
+    geom_smooth(method = "lm", se = TRUE) +
+    scale_y_continuous(
+      name = "log RT",
+      limits= c(7.5,8.5)) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "Scaled CDS log-frequency") +
+    theme_minimal()
+  theme(legend.position = "none")
+  
+(rt_NOR_C_p1 | rt_NOR_C_p2 | rt_NOR_C_p3) + plot_annotation(title = "Norwegian Comprehension") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+  
+```
+
+### Production RTs
+
+```{r no-rt-prod-plot}
+rt_NOR_P_p1 <- ggplot(data_no_out_outliers %>% filter(task == "P"), 
+                        aes(x = AoA, y = logRT, color = group, fill = group)) +
+    geom_smooth(method = "lm", se = TRUE) +
+    scale_y_continuous(
+      name = "log RT",
+      limits= c(7.5,8.5)) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "AoA (in years)") +
+    theme_minimal()
+  
+rt_NOR_P_p2 <- ggplot(data_no_out_outliers %>% filter(task == "P"), 
+                        aes(x = Imageability, y = logRT, color = group, fill = group)) +
+    geom_smooth(method = "lm", se = TRUE) +
+    scale_y_continuous(
+      name = "log RT",
+      limits= c(7.5,8.5)) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "Imageability (1 to 7)") +
+    theme_minimal()
+  theme(legend.position = "none")
+  
+rt_NOR_P_p3 <- ggplot(data_no_out_outliers %>% filter(task == "P"), 
+                        aes(x = frequency_cds_scaled, y = logRT, color = group, fill = group)) +
+    geom_smooth(method = "lm", se = TRUE) +
+    scale_y_continuous(
+      name = "log RT",
+      limits= c(7.5,8.5)) +
+    scale_color_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    scale_fill_manual(
+      name = "Group",
+      values = c("monoNO" = "blue", "bi" = "red"),
+      labels = c("Monolinguals", "Bilinguals")
+    ) +
+    labs(x = "Scaled CDS log-frequency") +
+    theme_minimal()
+  theme(legend.position = "none")
+  
+(rt_NOR_P_p1 | rt_NOR_P_p2 | rt_NOR_P_p3) + plot_annotation(title = "Norwegian Production") + plot_layout(guides = "collect") & theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+```
+
+## Join plots
+
+```{r join-plots}
+  make_title_row <- function(label) {
+    ggplot() +
+      annotate("text", x = 0.5, y = 0.5, label = label,
+               size = 5, fontface = "bold", hjust = 0.5) +
+      theme_void()
+  }
+  
+  row_titles <- c(
+    "A. Polish Comprehension",
+    "B. Polish Production",
+    "C. Norwegian Comprehension",
+    "D. Norwegian Production"
+  )
+  
+  row_plots_accuracy <- list(
+    acc_PL_C_p1 + acc_PL_C_p2 + acc_PL_C_p3,
+    acc_PL_P_p1 + acc_PL_P_p2 + acc_PL_P_p3,
+    acc_NOR_C_p1 + acc_NOR_C_p2 + acc_NOR_C_p3,
+    acc_NOR_P_p1 + acc_NOR_P_p2 + acc_NOR_P_p3
+  )
+  
+  row_plots_RT <- list(
+    rt_PL_C_p1 + rt_PL_C_p2 + rt_PL_C_p3,
+    rt_PL_P_p1 + rt_PL_P_p2 + rt_PL_P_p3,
+    rt_NOR_C_p1 + rt_NOR_C_p2 + rt_NOR_C_p3,
+    rt_NOR_P_p1 + rt_NOR_P_p2 + rt_NOR_P_p3
+  )
+  
+  rows_accuracy <- list()
+  for (i in seq_along(row_titles)) {
+    title <- make_title_row(row_titles[i])
+    plot_row <- row_plots_accuracy[[i]]
+    rows_accuracy[[length(rows_accuracy) + 1]] <- title
+    rows_accuracy[[length(rows_accuracy) + 1]] <- plot_row
+  }
+  
+  rows_rt <- list()
+  for (i in seq_along(row_titles)) {
+    title <- make_title_row(row_titles[i])
+    plot_row <- row_plots_RT[[i]]
+    rows_rt[[length(rows_rt) + 1]] <- title
+    rows_rt[[length(rows_rt) + 1]] <- plot_row
+  }
+  
+  final_plot_accuracy <- wrap_plots(rows_accuracy, ncol = 1, heights = rep(c(0.18, 1), 4), guides = "collect") &
+    theme(legend.position = "bottom")
+  
+  final_plot_rt <- wrap_plots(rows_rt, ncol = 1, heights = rep(c(0.18, 1), 4), guides = "collect") &
+    theme(legend.position = "bottom")
+  
+  final_plot_accuracy
+  final_plot_rt
+  
+ggsave("Accuracy Panel.png", plot = final_plot_accuracy, width = 12, height = 16, dpi = 300)
+ggsave("RT Panel.png", plot = final_plot_rt, width = 12, height = 16, dpi = 300)
+
+```
+
+## Effect Size Plots
+
+```{r}
+#params_PL_C_acc <- model_parameters(models_acc$polish_c_acc)
+#params_PL_P_acc <- model_parameters(models_acc$polish_p_acc)
+#params_NOR_C_acc <- model_parameters(models_acc$norwegian_c_acc)
+#params_NOR_P_acc <- model_parameters(models_acc$norwegian_p_acc)
+
+new_order <- c("groupbi", "Age_scaled","AoA_scaled", "frequency_cds_scaled", "imageability_scaled",
+               "groupbi:AoA_scaled", 
+               "groupbi:frequency_cds_scaled",
+               "groupbi:imageability_scaled",
+               "imageability_scaled:frequency_cds_scaled")
+labels_dict <- c("groupbi" = "Group (bilinguals)",
+                 "Age_scaled" = "Child's Age",
+                 "AoA_scaled" = "AoA",
+                 "frequency_cds_scaled"= "CDS Frequency",
+                 "imageability_scaled"  = "Imageability",
+                 "groupbi:AoA_scaled" = "Group x AoA",
+                 "groupbi:frequency_cds_scaled" = "Group x CDS Frequency",
+                 "groupbi:imageability_scaled" = "Group x Imageability",
+                 "imageability_scaled:frequency_cds_scaled" = "Group x Imageability x CDS Frequency")
+
+plot_model_effects <- function(model, params, title, new_order = NULL, labels_dict = NULL, ylim=c(-2.6, 2.6)) {
+  
+  # Colors for significant effects
+  effect_palette <- c(
+    "groupbi" = "#8CCE7D",
+    "Age_scaled" = "#00416D",
+    "AoA_scaled" = "#50aac8",
+    "frequency_cds_scaled" = "#e6942a",
+    "imageability_scaled" = "#df454f"
+  )
+  
+  # CI calculations
+  if(!all(c("ci_lower","ci_upper") %in% colnames(params))){
+    ci_df <- as.data.frame(confint.merMod(model, method = "Wald"))
+    ci_df$var <- rownames(ci_df)
+    colnames(ci_df) <- c("ci_lower","ci_upper","term")
+    rownames(ci_df) <- NULL
+    ci_df <- ci_df %>% filter(!is.na(ci_lower))
+    params <- params %>%
+      left_join(ci_df, by = c("Parameter" = "term")) %>%
+      rename(Coefficient = Coefficient, Parameter = Parameter)
+  }
+  
+  viz <- params %>%
+    rename(term = Parameter, estimate = Coefficient) %>%
+    filter(term != "(Intercept)")
+
+  # If no explicit ordering was supplied, keep the terms' natural order.
+  if(is.null(new_order)){
+    new_order <- unique(as.character(viz$term))
+  }
+
+  viz <- viz %>%
+    mutate(term = factor(term, levels = new_order)) %>%
+    arrange(term) %>%
+    filter(!is.na(term), !is.na(estimate)) %>%
+    mutate(sig = ifelse(!is.na(ci_lower) & ci_lower * ci_upper > 0, TRUE, FALSE),
+           base_effect = sapply(strsplit(as.character(term), ":"), `[`, 2),
+           base_effect = ifelse(base_effect == "" | is.na(base_effect), as.character(term), base_effect),
+           color_final = ifelse(sig, effect_palette[base_effect], "grey70"))
+  
+  
+  plot <- viz %>%
+    ggplot(aes(y = estimate, x = term, ymin = ci_lower, ymax = ci_upper, color = color_final)) +
+    geom_hline(yintercept = 0, linetype = 2) +
+    geom_errorbar(width = 0.3, linewidth = 1) +
+    geom_point(size = 3) +
+    coord_flip() +
+    labs(y = "Coefficient Estimate", x = NULL, title = title) +
+    theme_classic() +
+    scale_x_discrete(labels = if(is.null(labels_dict)) ggplot2::waiver() else labels_dict, limits = rev) +
+    scale_color_identity() +
+    scale_y_continuous(limits = ylim) +
+    theme(
+      text = element_text(face="bold", size=16),
+      plot.title = element_text(hjust = 0.5),
+      panel.spacing = unit(2, "lines")
+    )
+  
+  return(plot)
+}
+
+
+# List of models
+model_list <- list(
+  "PL_C_acc" = models_acc$polish_c_acc,
+  "PL_P_acc" = models_acc$polish_p_acc,
+  "NOR_C_acc" = models_acc$norwegian_c_acc,
+  "NOR_P_acc" = models_acc$norwegian_p_acc,
+  "PL_C_rt" = models_rt_simpler$polish_c_rt,
+  "PL_P_rt" = models_rt_simpler$polish_p_rt,
+  "NOR_C_rt" = models_rt_simpler$norwegian_c_rt,
+  "NOR_P_rt" = models_rt_simpler$norwegian_p_rt
+)
+
+titles <- c(
+  "Polish Comprehension",
+  "Polish Production",
+  "Norwegian Comprehension",
+  "Norwegian Production",
+  "Polish Comprehension",
+  "Polish Production",
+  "Norwegian Comprehension",
+  "Norwegian Production"
+)
+
+# OX limits depending on models
+lims <- ifelse(grepl("_acc", names(model_list)), list(c(-2.5, 2.5 )), list(c(-0.25, 0.25)))
+
+plots_list <- list()
+
+for(i in seq_along(model_list)){
+  model <- model_list[[i]]
+  name <- names(model_list)[i]
+  
+  if(grepl("_acc", name)){
+    params <- model_parameters(model) %>% as.data.frame() %>% rename(Coefficient = Coefficient, Parameter = Parameter)
+  } else {
+    params <- as.data.frame(tidy(model))
+    ci_df <- as.data.frame(confint.merMod(model, method = "Wald"))
+    ci_df$var <- rownames(ci_df)
+    colnames(ci_df) <- c("ci_lower","ci_upper","term")
+    rownames(ci_df) <- NULL
+    ci_df <- ci_df %>% filter(!is.na(ci_lower))
+    params <- params %>%
+      left_join(ci_df, by = c("term" = "term")) %>%
+      rename(Coefficient = estimate, Parameter = term)
+  }
+  
+  plot <- plot_model_effects(
+    model = model,
+    params = params,
+    title = titles[i],
+    new_order = new_order,
+    labels_dict = labels_dict,
+    ylim = lims[[i]]
+  )
+  
+  plots_list[[name]] <- plot
+}
+
+
+row1 <- plots_list$PL_C_acc + plots_list$NOR_C_acc
+row2 <- plots_list$PL_P_acc  + plots_list$NOR_P_acc
+row3 <- plots_list$PL_C_rt + plots_list$NOR_C_rt
+row4 <- plots_list$PL_P_rt + plots_list$NOR_P_rt
+
+horizontal_line <- ggplot() +
+  geom_hline(yintercept = 0.2, color = "black", linetype = "solid", linewidth = 0.5) +
+  theme_void() +
+  theme(plot.margin = margin(0, 0, 0, 0))
+
+title_accuracy <- ggplot() +
+  annotate("text", x = 0.5, y = 0.5, label = "A. Accuracy", size = 8, fontface = "bold", hjust = 0.5) +
+  theme_void()
+
+title_rt <- ggplot() +
+  annotate("text", x = 0.5, y = 0.5, label = "B. Response times", size = 8, fontface = "bold", hjust = 0.5) +
+  theme_void()
+
+
+panel_effects_all <- title_accuracy / row1 / row2  / horizontal_line / title_rt / row3 / row4 +   plot_layout(heights = c(0.5, 3, 3, 0.3, 0.4, 3, 3))
+
+
+panel_effects_all
+
+ggsave("Effect sizes Panel.png", plot = panel_effects_all, width = 13, height = 16, dpi = 300)
 ```
 
