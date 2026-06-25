@@ -51,10 +51,9 @@ data_pl_filtered <- data_pl %>%
   filter(accuracy_strict == 1) %>%
   filter(reaction_time>=1000) %>%
   filter(complete.cases(frequency_cds, Imageability, AoA))
-length(data_pl_filtered$reaction_time) 
+#excluded RTs < 1000 ms
+data_pl %>% filter(reaction_time < 1000) %>% summarise(n()) #132
 #there are 11173 measured reaction times for correct responses and complete cases, 
-#RTs>=1000 ms
-
 mean_RT_PL <- data_pl_filtered %>%
   group_by(child_id, task) %>%
   summarise(mean_score = mean(reaction_time), 
@@ -92,6 +91,11 @@ summary(outliers_only_PL)
 data_pl_out_outliers <- data_pl_with_outliers %>%
   filter(!(outlier_per_child == TRUE & outlier_overall == TRUE))
 data_pl_out_outliers$group <-relevel(factor(data_pl_out_outliers$group), ref="monoPL")
+
+#excluded RTs
+data_pl_with_outliers %>%
+  filter(outlier_per_child == TRUE & outlier_overall == TRUE) %>%
+  summarise(n()) #90
 ```
 
 ```{r scale-pl, include=FALSE}
@@ -134,6 +138,8 @@ data_no_filtered <- data_no %>%
   filter(reaction_time>=1000) %>%
   filter(complete.cases(frequency_cds, Imageability, AoA))
 length(data_no_filtered$reaction_time)  
+#excluded RTs < 1000 ms
+data_no %>% filter(reaction_time < 1000) %>% summarise(n()) #196
 #there are 9850 measured reaction times for correct responses and complete cases, RTs>=1000 ms
   
 mean_RT_NOR <- data_no_filtered %>%
@@ -171,6 +177,10 @@ summary(outliers_only_no)
 #Now we exclude outliers from the database based on the two criteria (>M+3SD for child and for task)
 data_no_out_outliers <- data_no_with_outliers %>%
   filter(!(outlier_per_child == TRUE & outlier_overall == TRUE))
+#excluded RTs
+data_no_with_outliers %>%
+  filter(outlier_per_child == TRUE & outlier_overall == TRUE) %>%
+  summarise(n()) #77
 ```
 
 NO CDS frequency is scaled on the formula:
