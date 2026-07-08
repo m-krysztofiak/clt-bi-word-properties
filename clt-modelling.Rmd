@@ -110,7 +110,8 @@ data_pl_out_outliers <- data_pl_out_outliers %>%
                                 center = T, scale = T),
     AoA_scaled = scale(AoA, 
                        center = T, scale = T),
-    logRT=log(reaction_time))
+    logRT=log(reaction_time),
+    Age_scaled = scale(Age, center = T, scale = T))
 
 data_pl_out_outliers$group <-relevel(factor(data_pl_out_outliers$group), ref="monoPL")
 
@@ -124,7 +125,8 @@ data_pl <- data_pl %>%
     imageability_scaled = scale(Imageability, 
                                 center = TRUE, scale = TRUE),
     AoA_scaled = scale(AoA, 
-                       center = TRUE, scale = TRUE))
+                       center = TRUE, scale = TRUE),
+    Age_scaled = scale(Age, center = T, scale = T))
 
 summary(data_pl)
 data_pl$group <-relevel(factor(data_pl$group), ref="monoPL")
@@ -198,7 +200,8 @@ data_no_out_outliers <- data_no_out_outliers %>%
                                 center = T, scale = T),
     AoA_scaled = scale(AoA, 
                        center = T, scale = T),
-    logRT=log(reaction_time))
+    logRT=log(reaction_time),
+    Age_scaled = scale(Age, center = T, scale = T))
 
 data_no_out_outliers$group <-relevel(factor(data_no_out_outliers$group), ref="monoNO")
 
@@ -212,7 +215,8 @@ data_no <- data_no %>%
     imageability_scaled = scale(Imageability, center = T, 
                                 scale = T),
     AoA_scaled = scale(AoA, 
-                       center = T, scale = T))
+                       center = T, scale = T),
+    Age_scaled = scale(Age, center = T, scale = T))
 
 data_no$group <-relevel(factor(data_no$group), ref="monoNO")
 ```
@@ -221,7 +225,7 @@ data_no$group <-relevel(factor(data_no$group), ref="monoNO")
 
 ### Polish
 
-```{r include = FALSE}
+```{r pl-correlation, include = FALSE}
 df_num_pl <- data_pl %>%
   distinct(word, frequency_cds_scaled, 
            imageability_scaled, 
@@ -240,7 +244,7 @@ cor_res$n - 2
 
 ### Norwegian
 
-```{r include = FALSE}
+```{r no-correlation, include = FALSE}
 df_num_no <- data_no %>%
   distinct(word, frequency_cds_scaled, 
            imageability_scaled, AoA_scaled) %>%
@@ -264,13 +268,7 @@ We run all models together (divided only into accuracy and RTs):
 2) Run and view accuracy models
 3) Summarise the results
 
-### Scale age and bind data
-
-```{r acc-data-scale-age, include = FALSE}
-#scale and center age
-data_pl$Age_scaled <- scale(data_pl$Age, center = T, scale = T)
-data_no$Age_scaled <- scale(data_no$Age, center = T, scale = T)
-```
+### Bind data
 
 ```{r bind data, include = FALSE}
 bind_rows(data_pl, data_no) %>%
@@ -383,13 +381,7 @@ print(doc, target = "glmer_summary.docx")
 
 ##  RTs models
 
-### Scale age and bind data
-
-```{r rt-data-scale-age}
-#scale and center age
-data_pl_out_outliers$Age_scaled <- scale(data_pl_out_outliers$Age, center = T, scale = T)
-data_no_out_outliers$Age_scaled <- scale(data_no_out_outliers$Age, center = T, scale = T)
-```
+### Bind data
 
 ```{r bind-rt-data}
 bind_rows(data_pl_out_outliers, data_no_out_outliers) %>%
