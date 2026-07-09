@@ -15,6 +15,7 @@ options(scipen = 999) #removes scietific notation
 library(tidyverse)
 library(Hmisc)
 library(lme4)
+library(broom.mixed)
 library(afex)
 library(gtsummary)
 library(flextable)
@@ -329,7 +330,13 @@ lapply(models_acc, function(m) {
 ### Polish Comprehension
 
 ```{r, echo = FALSE}
-summary(models_acc$polish_c_acc)
+#summary(models_acc$polish_c_acc)
+tidy(models_acc$polish_c_acc, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3))
 r.squaredGLMM(models_acc$polish_c_acc)
 vif(models_acc$polish_c_acc)
 #we consider theoretical R 
@@ -339,8 +346,15 @@ vif(models_acc$polish_c_acc)
 ### Polish Production
 
 ```{r, echo = FALSE}
-summary(models_acc$polish_p_acc)
+#summary(models_acc$polish_p_acc)
+tidy(models_acc$polish_p_acc, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3)) 
 r.squaredGLMM(models_acc$polish_p_acc)
+vif(models_acc$polish_p_acc)
 #we consider theoretical R 
 #(not impacted by the lack of convergence of the null model)
 ```
@@ -348,8 +362,15 @@ r.squaredGLMM(models_acc$polish_p_acc)
 ### Norwegian Comprehension
 
 ```{r, echo = FALSE}
-summary(models_acc$norwegian_c_acc)
+#summary(models_acc$norwegian_c_acc)
+tidy(models_acc$norwegian_c_acc, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3)) 
 r.squaredGLMM(models_acc$norwegian_c_acc)
+vif(models_acc$norwegian_c_acc)
 #we consider theoretical R 
 #(not impacted by the lack of convergence of the null model)
 ```
@@ -357,26 +378,17 @@ r.squaredGLMM(models_acc$norwegian_c_acc)
 ### Norwegian Production
 
 ```{r, echo = FALSE}
-summary(models_acc$norwegian_p_acc)
+#summary(models_acc$norwegian_p_acc)
+tidy(models_acc$norwegian_p_acc, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3))
 r.squaredGLMM(models_acc$norwegian_p_acc)
+vif(models_acc$norwegian_p_acc)
 #we consider theoretical R 
 #(not impacted by the lack of convergence of the null model)
-```
-
-### Extract table
-
-```{r tables-accuracy-models, eval = FALSE}
-# Build a merged table
-merged_table <- tbl_merge(
-  tbls = lapply(models_acc, function(m) tbl_regression(m, exponentiate = TRUE)),
-  tab_spanner = names(models_acc)   # uses list names as column headers
-)
-
-# Export
-doc <- read_docx() %>%
-  body_add_flextable(as_flex_table(merged_table))
-
-print(doc, target = "glmer_summary.docx")
 ```
 
 ##  RTs models
@@ -393,7 +405,7 @@ bind_rows(data_pl_out_outliers, data_no_out_outliers) %>%
 
 First more complex with random slopes:
 
-```{r models-rts-all}
+```{r models-rts-all, eval = FALSE}
 formula_lmer <- logRT ~ Age_scaled + 
   group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
                         imageability_scaled * frequency_cds_scaled +
@@ -421,7 +433,7 @@ summary(models_rt)
 
 Most models did not converge: _boundary (singular) fit_
 
-```{r convergence-rt-checks}
+```{r convergence-rt-checks, include = FALSE, eval = FALSE}
 lapply(models_rt, function(m) {
   w <- m@optinfo$conv$lme4$messages
   if (is.null(w)) "OK" else w
@@ -430,7 +442,7 @@ lapply(models_rt, function(m) {
 
 We proceed with simpler models (no random slopes)
 
-```{r models-rts-all-simple}
+```{r models-rts-all-simple, echo = FALSE}
 formula_lmer_simpler <- logRT ~ Age_scaled + 
   group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
   imageability_scaled * frequency_cds_scaled +
@@ -455,7 +467,7 @@ models_rt_simpler <- lapply(conditions, function(cond) {
 summary(models_rt_simpler)
 ```
 
-```{r convergence-rt-checks-2}
+```{r convergence-rt-checks-2, echo = FALSE}
 lapply(models_rt_simpler, function(m) {
   w <- m@optinfo$conv$lme4$messages
   if (is.null(w)) "OK" else w
@@ -464,48 +476,59 @@ lapply(models_rt_simpler, function(m) {
 
 ### Polish Comprehension
 
-```{r}
-summary(models_rt_simpler$polish_c_rt)
+```{r, echo = FALSE}
+#summary(models_rt_simpler$polish_c_rt)
+tidy(models_rt_simpler$polish_c_rt, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3))
+vif(models_rt_simpler$polish_c_rt)
 r.squaredGLMM(models_rt_simpler$polish_c_rt)
 ```
 
 ### Polish Production
 
 ```{r}
-summary(models_rt_simpler$polish_p_rt)
+#summary(models_rt_simpler$polish_p_rt)
+tidy(models_rt_simpler$polish_p_rt, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3))
+vif(models_rt_simpler$polish_p_rt)
 r.squaredGLMM(models_rt_simpler$polish_p_rt)
 ```
 
 ### Norwegian Comprehension
 
 ```{r}
-summary(models_rt_simpler$norwegian_c_rt)
+#summary(models_rt_simpler$norwegian_c_rt)
+tidy(models_rt_simpler$norwegian_c_rt, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3))
+vif(models_rt_simpler$norwegian_c_rt)
 r.squaredGLMM(models_rt_simpler$norwegian_c_rt)
 ```
 
 ### Norwegian Production
 
 ```{r}
-summary(models_rt_simpler$norwegian_p_rt)
+#summary(models_rt_simpler$norwegian_p_rt)
+tidy(models_rt_simpler$norwegian_p_rt, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3))
+vif(models_rt_simpler$norwegian_p_rt)
 r.squaredGLMM(models_rt_simpler$norwegian_p_rt)
 ```
-
-### Export Tables
-
-```{r tables-rts-models, eval = FALSE}
-# Build a merged table
-merged_table_rt <- tbl_merge(
-  tbls = lapply(models_rt_simpler, function(m) tbl_regression(m, exponentiate = TRUE)),
-  tab_spanner = names(models_rt_simpler)   # uses list names as column headers
-)
-
-# Export
-doc_rt <- read_docx() |>
-  body_add_flextable(as_flex_table(merged_table_rt))
-
-print(doc_rt, target = "lmer_summary.docx")
-```
-  
 
 # Exposure and Accuracy
 
