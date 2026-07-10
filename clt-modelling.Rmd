@@ -305,7 +305,7 @@ models_acc <- lapply(conditions, function(cond) {
   df_sub <- subset(data_full, language == cond$language & task == cond$task)
   model <- glmer(formula_glmer, data = df_sub, control = ctrl, family = binomial)
   
-  # Create a unique env-stable name
+  #create a an oject in the global environment (for R2 calculation)
   data_name <- paste0("data_", cond$language, "_", cond$task)
   assign(data_name, df_sub, envir = globalenv())
   model@call$data <- as.name(data_name)
@@ -532,6 +532,8 @@ r.squaredGLMM(models_rt_simpler$norwegian_p_rt)
 
 # Exposure and Accuracy
 
+###  Select bilinguals
+
 ```{r select-bi}
 data_full %>% filter(group == "bi") -> data_bi_full
 ```
@@ -548,7 +550,9 @@ data_bi_full %>%
   geom_density()
 ```
 
-```{r exposure-accuracy-models}
+### Prepare all models
+
+```{r exposure-accuracy-models, include = FALSE}
 conditions <- list(
   polish_p_exposure    = list(language = "POLISH",
                               task = "P",
@@ -564,17 +568,36 @@ conditions <- list(
                               input_var = "no_input_sum_percentage")
 )
 
-models_acc_exposure <- lapply(conditions, function(cond) {
-  df_sub <- subset(data_bi_full, language == cond$language & task == cond$task)
-  
+
+
+#subsets
+subsets_acc_exposure <- lapply(conditions, function(cond) {
+  subset(data_bi_full, language == cond$language & task == cond$task)
+})
+
+ctrl <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
+
+#models
+models_acc_exposure <- lapply(names(conditions), function(nm) {
+  cond   <- conditions[[nm]]
+  df_sub <- subsets_acc_exposure[[nm]]
+
   formula_glmer <- as.formula(paste0(
     "accuracy_strict ~ ", cond$input_var, " * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
      Age_scaled + imageability_scaled * frequency_cds_scaled +
      (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word)"
   ))
-  
-  glmer(formula_glmer, data = df_sub, control = ctrl, family = binomial)
+
+  model <- glmer(formula_glmer, data = df_sub, control = ctrl, family = binomial)
+
+  #create a an oject in the global environment (for R2 calculation)
+  data_name <- paste0("data_", cond$language, "_", cond$task)
+  assign(data_name, df_sub, envir = globalenv())
+  model@call$data <- as.name(data_name)
+
+  model
 })
+names(models_acc_exposure) <- names(conditions)
 ```
 
 ```{r convergence-acc-exposure-checks}
@@ -586,26 +609,58 @@ lapply(models_acc_exposure, function(m) {
 
 ### Polish Comprehension
 
-```{r}
-summary(models_acc_exposure$polish_c_exposure)
+```{r echo = FALSE}
+#summary(models_acc_exposure$polish_c_exposure)
+tidy(models_acc_exposure$polish_c_exposure, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3))
+vif(models_acc_exposure$polish_c_exposure)
+r.squaredGLMM(models_acc_exposure$polish_c_exposure)
 ```
  
 ### Polish Production
 
-```{r}
-summary(models_acc_exposure$polish_p_exposure)
+```{r echo = FALSE}
+#summary(models_acc_exposure$polish_p_exposure)
+tidy(models_acc_exposure$polish_p_exposure, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3))
+vif(models_acc_exposure$polish_p_exposure)
+r.squaredGLMM(models_acc_exposure$polish_p_exposure)
 ```
  
 ### Norwegian Comprehension
 
-```{r}
-summary(models_acc_exposure$norwegian_c_exposure)
+```{r echo = FALSE}
+#summary(models_acc_exposure$norwegian_c_exposure)
+tidy(models_acc_exposure$norwegian_c_exposure, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3))
+vif(models_acc_exposure$norwegian_c_exposure)
+r.squaredGLMM(models_acc_exposure$norwegian_c_exposure)
 ``` 
  
 ### Norwegian Production
 
-```{r}
-summary(models_acc_exposure$norwegian_p_exposure)
+```{r echo = FALSE}
+#summary(models_acc_exposure$norwegian_p_exposure)
+tidy(models_acc_exposure$norwegian_p_exposure, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3)) %>% View()
+vif(models_acc_exposure$norwegian_p_exposure)
+r.squaredGLMM(models_acc_exposure$norwegian_p_exposure)
 ``` 
 
 # Exposure and RTs
@@ -614,7 +669,7 @@ summary(models_acc_exposure$norwegian_p_exposure)
 data_full_out_outliers %>% filter(group == "bi") -> data_bi_full_rt
 ```
 
-```{r exposure-rt-models}
+```{r exposure-rt-models, include = FALSE}
 conditions <- list(
   polish_p_exposure_rt    = list(language = "POLISH",
                               task = "P",
@@ -643,7 +698,7 @@ models_rt_exposure <- lapply(conditions, function(cond) {
 })
 ```
 
-```{r convergence-rt-exposure-checks}
+```{r convergence-rt-exposure-checks, echo = FALSE}
 lapply(models_rt_exposure, function(m) {
   w <- m@optinfo$conv$lme4$messages
   if (is.null(w)) "OK" else w
@@ -652,26 +707,58 @@ lapply(models_rt_exposure, function(m) {
 
 ### Polish Comprehension
 
-```{r}
-summary(models_rt_exposure$polish_c_exposure)
+```{r echo = FALSE}
+#summary(models_rt_exposure$polish_c_exposure)
+tidy(models_rt_exposure$polish_c_exposure, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3))
+vif(models_rt_exposure$polish_c_exposure)
+r.squaredGLMM(models_rt_exposure$polish_c_exposure)
 ```
  
 ### Polish Production
 
-```{r}
-summary(models_rt_exposure$polish_p_exposure)
+```{r echo = FALSE}
+#summary(models_rt_exposure$polish_p_exposure)
+tidy(models_rt_exposure$polish_p_exposure, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3)) %>% View()
+vif(models_rt_exposure$polish_p_exposure)
+r.squaredGLMM(models_rt_exposure$polish_p_exposure)
 ```
  
 ### Norwegian Comprehension
 
-```{r}
-summary(models_rt_exposure$norwegian_c_exposure)
+```{r echo = FALSE}
+#summary(models_rt_exposure$norwegian_c_exposure)
+tidy(models_rt_exposure$norwegian_c_exposure, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3))
+vif(models_rt_exposure$norwegian_c_exposure)
+r.squaredGLMM(models_rt_exposure$norwegian_c_exposure)
 ``` 
  
 ### Norwegian Production
 
-```{r}
-summary(models_rt_exposure$norwegian_p_exposure)
+```{r echo = FALSE}
+#summary(models_rt_exposure$norwegian_p_exposure)
+tidy(models_rt_exposure$norwegian_p_exposure, effects = "fixed", 
+     conf.int = TRUE, conf.level = 0.95) %>%
+  mutate (estimate = round(estimate, 3),
+          std.error = round(std.error,3),
+          z = round(statistic,3),
+          p.value = round(p.value,3)) %>% View()
+vif(models_rt_exposure$norwegian_p_exposure)
+r.squaredGLMM(models_rt_exposure$norwegian_p_exposure)
 ``` 
 
 # Reliability analyses
