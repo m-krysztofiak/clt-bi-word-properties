@@ -570,14 +570,12 @@ conditions <- list(
 
 
 
-#subsets
 subsets_acc_exposure <- lapply(conditions, function(cond) {
   subset(data_bi_full, language == cond$language & task == cond$task)
 })
 
 ctrl <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
 
-#models
 models_acc_exposure <- lapply(names(conditions), function(nm) {
   cond   <- conditions[[nm]]
   df_sub <- subsets_acc_exposure[[nm]]
@@ -590,10 +588,8 @@ models_acc_exposure <- lapply(names(conditions), function(nm) {
 
   model <- glmer(formula_glmer, data = df_sub, control = ctrl, family = binomial)
 
-  #create a an oject in the global environment (for R2 calculation)
-  data_name <- paste0("data_", cond$language, "_", cond$task)
-  assign(data_name, df_sub, envir = globalenv())
-  model@call$data <- as.name(data_name)
+  # repoint the stored data reference at the stable list element
+  model@call$data <- bquote(subsets_acc_exposure[[.(nm)]])
 
   model
 })
@@ -610,7 +606,7 @@ lapply(models_acc_exposure, function(m) {
 ### Polish Comprehension
 
 ```{r echo = FALSE}
-#summary(models_acc_exposure$polish_c_exposure)
+summary(models_acc_exposure$polish_c_exposure)
 tidy(models_acc_exposure$polish_c_exposure, effects = "fixed", 
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
