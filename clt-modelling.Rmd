@@ -335,7 +335,7 @@ tidy(models_acc$polish_c_acc, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
+          statistic = round(statistic,3),
           p.value = round(p.value,3))
 r.squaredGLMM(models_acc$polish_c_acc)
 vif(models_acc$polish_c_acc)
@@ -351,8 +351,8 @@ tidy(models_acc$polish_p_acc, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
-          p.value = round(p.value,3)) 
+          statistic = round(statistic,3),
+          p.value = round(p.value,3))
 r.squaredGLMM(models_acc$polish_p_acc)
 vif(models_acc$polish_p_acc)
 #we consider theoretical R 
@@ -367,8 +367,8 @@ tidy(models_acc$norwegian_c_acc, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
-          p.value = round(p.value,3)) 
+          statistic = round(statistic,3),
+          p.value = round(p.value,3))
 r.squaredGLMM(models_acc$norwegian_c_acc)
 vif(models_acc$norwegian_c_acc)
 #we consider theoretical R 
@@ -383,7 +383,7 @@ tidy(models_acc$norwegian_p_acc, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
+          statistic = round(statistic,3),
           p.value = round(p.value,3))
 r.squaredGLMM(models_acc$norwegian_p_acc)
 vif(models_acc$norwegian_p_acc)
@@ -482,7 +482,7 @@ tidy(models_rt_simpler$polish_c_rt, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
+          statistic = round(statistic,3),
           p.value = round(p.value,3))
 vif(models_rt_simpler$polish_c_rt)
 r.squaredGLMM(models_rt_simpler$polish_c_rt)
@@ -496,7 +496,7 @@ tidy(models_rt_simpler$polish_p_rt, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
+          statistic = round(statistic,3),
           p.value = round(p.value,3))
 vif(models_rt_simpler$polish_p_rt)
 r.squaredGLMM(models_rt_simpler$polish_p_rt)
@@ -510,7 +510,7 @@ tidy(models_rt_simpler$norwegian_c_rt, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
+          statistic = round(statistic,3),
           p.value = round(p.value,3))
 vif(models_rt_simpler$norwegian_c_rt)
 r.squaredGLMM(models_rt_simpler$norwegian_c_rt)
@@ -524,7 +524,7 @@ tidy(models_rt_simpler$norwegian_p_rt, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
+          statistic = round(statistic,3),
           p.value = round(p.value,3))
 vif(models_rt_simpler$norwegian_p_rt)
 r.squaredGLMM(models_rt_simpler$norwegian_p_rt)
@@ -594,6 +594,7 @@ models_acc_exposure <- lapply(names(conditions), function(nm) {
   model
 })
 names(models_acc_exposure) <- names(conditions)
+summary(models_acc_exposure)
 ```
 
 ```{r convergence-acc-exposure-checks}
@@ -611,7 +612,7 @@ tidy(models_acc_exposure$polish_c_exposure, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
+          statistic = round(statistic,3),
           p.value = round(p.value,3))
 vif(models_acc_exposure$polish_c_exposure)
 r.squaredGLMM(models_acc_exposure$polish_c_exposure)
@@ -625,7 +626,7 @@ tidy(models_acc_exposure$polish_p_exposure, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
+          statistic = round(statistic,3),
           p.value = round(p.value,3))
 vif(models_acc_exposure$polish_p_exposure)
 r.squaredGLMM(models_acc_exposure$polish_p_exposure)
@@ -639,7 +640,7 @@ tidy(models_acc_exposure$norwegian_c_exposure, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
+          statistic = round(statistic,3),
           p.value = round(p.value,3))
 vif(models_acc_exposure$norwegian_c_exposure)
 r.squaredGLMM(models_acc_exposure$norwegian_c_exposure)
@@ -653,8 +654,8 @@ tidy(models_acc_exposure$norwegian_p_exposure, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
-          p.value = round(p.value,3)) %>% View()
+          statistic = round(statistic,3),
+          p.value = round(p.value,3))
 vif(models_acc_exposure$norwegian_p_exposure)
 r.squaredGLMM(models_acc_exposure$norwegian_p_exposure)
 ``` 
@@ -709,7 +710,7 @@ tidy(models_rt_exposure$polish_c_exposure, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
+          statistic = round(statistic,3),
           p.value = round(p.value,3))
 vif(models_rt_exposure$polish_c_exposure)
 r.squaredGLMM(models_rt_exposure$polish_c_exposure)
@@ -723,8 +724,8 @@ tidy(models_rt_exposure$polish_p_exposure, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
-          p.value = round(p.value,3)) %>% View()
+          statistic = round(statistic,3),
+          p.value = round(p.value,3))
 vif(models_rt_exposure$polish_p_exposure)
 r.squaredGLMM(models_rt_exposure$polish_p_exposure)
 ```
@@ -737,7 +738,7 @@ tidy(models_rt_exposure$norwegian_c_exposure, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
+          statistic = round(statistic,3),
           p.value = round(p.value,3))
 vif(models_rt_exposure$norwegian_c_exposure)
 r.squaredGLMM(models_rt_exposure$norwegian_c_exposure)
@@ -751,8 +752,8 @@ tidy(models_rt_exposure$norwegian_p_exposure, effects = "fixed",
      conf.int = TRUE, conf.level = 0.95) %>%
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
-          z = round(statistic,3),
-          p.value = round(p.value,3)) %>% View()
+          statistic = round(statistic,3),
+          p.value = round(p.value,3)) %>% arrange(match(term, order_no)) %>% View()
 vif(models_rt_exposure$norwegian_p_exposure)
 r.squaredGLMM(models_rt_exposure$norwegian_p_exposure)
 ``` 
