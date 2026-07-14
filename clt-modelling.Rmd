@@ -682,6 +682,8 @@ conditions <- list(
                               input_var = "no_input_sum_percentage")
 )
 
+ctrl <- lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
+
 models_rt_exposure <- lapply(conditions, function(cond) {
   df_sub <- subset(data_bi_full_rt, language == cond$language & task == cond$task)
   
@@ -716,6 +718,12 @@ vif(models_rt_exposure$polish_c_exposure)
 r.squaredGLMM(models_rt_exposure$polish_c_exposure)
 ```
  
+ 
+ 
+```{r}
+
+```
+
 ### Polish Production
 
 ```{r echo = FALSE}
@@ -726,7 +734,6 @@ tidy(models_rt_exposure$polish_p_exposure, effects = "fixed",
           std.error = round(std.error,3),
           statistic = round(statistic,3),
           p.value = round(p.value,3))
-vif(models_rt_exposure$polish_p_exposure)
 r.squaredGLMM(models_rt_exposure$polish_p_exposure)
 ```
  
