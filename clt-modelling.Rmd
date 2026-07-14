@@ -7,7 +7,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(cache.comments=FALSE)
 options(scipen = 999) #removes scietific notation
 ```
 
@@ -271,7 +271,7 @@ We run all models together (divided only into accuracy and RTs):
 
 ### Bind data
 
-```{r bind data, include = FALSE}
+```{r bind-data, include = FALSE}
 bind_rows(data_pl, data_no) %>%
   mutate(group = if_else(group == "bi","bi","mono")) %>%
   mutate(group = fct_relevel(group, "mono", "bi")) -> data_full
@@ -279,7 +279,7 @@ bind_rows(data_pl, data_no) %>%
 
 ### Prepare models
 
-```{r models-accuracy-all, echo = FALSE}
+```{r models-accuracy-all, echo = FALSE, cache = TRUE}
 formula_glmer <- accuracy_strict ~ 
   Age_scaled +
   group * (AoA_scaled + 
@@ -395,7 +395,7 @@ vif(models_acc$norwegian_p_acc)
 
 ### Bind data
 
-```{r bind-rt-data}
+```{r bind-rt-data, include = FALSE}
 bind_rows(data_pl_out_outliers, data_no_out_outliers) %>%
   mutate(group = if_else(group == "bi","bi","mono")) %>%
   mutate(group = fct_relevel(group, "mono", "bi")) -> data_full_out_outliers
@@ -442,7 +442,7 @@ lapply(models_rt, function(m) {
 
 We proceed with simpler models (no random slopes)
 
-```{r models-rts-all-simple, echo = FALSE}
+```{r models-rts-all-simple, echo = FALSE, cache = TRUE}
 formula_lmer_simpler <- logRT ~ Age_scaled + 
   group * (AoA_scaled + imageability_scaled + frequency_cds_scaled) +
   imageability_scaled * frequency_cds_scaled +
@@ -534,11 +534,11 @@ r.squaredGLMM(models_rt_simpler$norwegian_p_rt)
 
 ###  Select bilinguals
 
-```{r select-bi}
+```{r select-bi, include = FALSE}
 data_full %>% filter(group == "bi") -> data_bi_full
 ```
 
-```{r explore-exposure}
+```{r explore-exposure, echo = FALSE}
 data_bi_full %>% 
   distinct(child_id, no_input_sum_percentage) %>%
   ggplot(aes(x = no_input_sum_percentage)) +
@@ -552,7 +552,7 @@ data_bi_full %>%
 
 ### Prepare all models
 
-```{r exposure-accuracy-models, include = FALSE}
+```{r exposure-accuracy-models, include = FALSE, cache = TRUE}
 conditions <- list(
   polish_p_exposure    = list(language = "POLISH",
                               task = "P",
@@ -623,7 +623,7 @@ VIF values are high (> 10) but this may be a result of the model's structure and
 ```{r}
 test_vif <- glmer(
   accuracy_strict ~ pl_input_sum_percentage + AoA_scaled + imageability_scaled + frequency_cds_scaled + Age_scaled + imageability_scaled * frequency_cds_scaled + (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word),
-  data = subset(data_bi_full_rt, language == "POLISH" & task == "C"),
+  data = subset(data_bi_full, language == "POLISH" & task == "C"),
   control = lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
 vif(test_vif)
 ```
@@ -673,11 +673,11 @@ r.squaredGLMM(models_acc_exposure$norwegian_p_exposure)
 
 # Exposure and RTs
 
-```{r select-bi-no-outliers}
+```{r select-bi-no-outliers, include = FALSE}
 data_full_out_outliers %>% filter(group == "bi") -> data_bi_full_rt
 ```
 
-```{r exposure-rt-models, include = FALSE}
+```{r exposure-rt-models, include = FALSE, cache = TRUE}
 conditions <- list(
   polish_p_exposure_rt    = list(language = "POLISH",
                               task = "P",
@@ -765,7 +765,7 @@ tidy(models_rt_exposure$norwegian_p_exposure, effects = "fixed",
   mutate (estimate = round(estimate, 3),
           std.error = round(std.error,3),
           statistic = round(statistic,3),
-          p.value = round(p.value,3)) %>% arrange(match(term, order_no)) %>% View()
+          p.value = round(p.value,3))
 vif(models_rt_exposure$norwegian_p_exposure)
 r.squaredGLMM(models_rt_exposure$norwegian_p_exposure)
 ``` 
@@ -1151,7 +1151,7 @@ more similar to the one in Łuniewska et al. (2022).
 Some effects were reveresed since in Łuniewska et al. (2022)
 baseline for group was "bilingual"
 
-```{r acc-model-power}
+```{r acc-model-power, cache = TRUE}
 acc_model_power <- glmer(accuracy_strict ~ 
                        group * (AoA_scaled + 
                                   imageability_scaled + 
@@ -1166,7 +1166,7 @@ acc_model_power <- glmer(accuracy_strict ~
 summary(acc_model_power)
 ```
 
-```{r effects-acc}
+```{r effects-acc, cache = TRUE}
 #two separate vectors bc group is "group" in the model and "groupbi" in the results
 lit_effects_acc <- list(
   fixef_name  = c("groupbi",                     
@@ -1215,12 +1215,12 @@ for (i in seq_along(lit_effects_acc$fixef_name)) {
   print(pwr_results_acc[[fixef_name]])
 }
 
-beepr::beep(sound = 1)
+#beepr::beep(sound = 1)
 ```
 
 ### Power analysis frequency x imageability
 
-```{r pa-freq-im}
+```{r pa-freq-im, cache = TRUE}
 # Use the literature-derived effect, with sign matching your hypothesis
 fixef(acc_model_power)["imageability_scaled:frequency_cds_scaled"] <- 0.38
 
@@ -1230,12 +1230,12 @@ pwr_analysis_freq_im <- powerSim(acc_model_power,
          nsim = 1000,
          seed = 42)
 pwr_analysis_freq_im
-beepr::beep(sound = 1)
+#beepr::beep(sound = 1)
 ```
 
 ## RTs
 
-```{r rt-power-model}
+```{r rt-power-model, cache = TRUE}
 #model
 #with raw RTs to match the ones in Łuniewska et al.
 model_power_rt <- lme4::lmer(reaction_time ~ 
@@ -1251,7 +1251,7 @@ summary(model_power_rt)
 fixef(model_power_rt)
 ```
 
-```{r effects-rts}
+```{r effects-rts, cache = TRUE}
 #two separate vectors bc group is "group" in the model and "groupbi" in the results
 lit_effects_rts <- list(
   fixef_name  = c("groupbi",                     
@@ -1303,7 +1303,7 @@ for (i in seq_along(lit_effects_rts$fixef_name)) {
   print(pwr_results_rt[[fixef_name]])
 }
 
-beepr::beep(sound = 1)
+#beepr::beep(sound = 1)
 ```
 
 # Visualisations
