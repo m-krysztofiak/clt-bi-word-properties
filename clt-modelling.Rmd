@@ -618,6 +618,17 @@ vif(models_acc_exposure$polish_c_exposure)
 r.squaredGLMM(models_acc_exposure$polish_c_exposure)
 ```
  
+VIF values are high (> 10) but this may be a result of the model's structure and exposure variable being kept in its original units (i.e., not centered). In a model without interactions, all VIF values are below 2. And models with interactions with categorical (group) variables did not show comparable inflation.
+
+```{r}
+test_vif <- glmer(
+  accuracy_strict ~ pl_input_sum_percentage + AoA_scaled + imageability_scaled + frequency_cds_scaled + Age_scaled + imageability_scaled * frequency_cds_scaled + (1 + AoA_scaled + imageability_scaled + frequency_cds_scaled | child_id) + (1 | word),
+  data = subset(data_bi_full_rt, language == "POLISH" & task == "C"),
+  control = lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5)))
+vif(test_vif)
+```
+ 
+ 
 ### Polish Production
 
 ```{r echo = FALSE}
@@ -718,12 +729,6 @@ vif(models_rt_exposure$polish_c_exposure)
 r.squaredGLMM(models_rt_exposure$polish_c_exposure)
 ```
  
- 
- 
-```{r}
-
-```
-
 ### Polish Production
 
 ```{r echo = FALSE}
